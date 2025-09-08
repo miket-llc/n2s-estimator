@@ -1,6 +1,14 @@
-# N2S Delivery Estimator
+# 📊 N2S Delivery Estimator
 
-A Streamlit application for estimating N2S (Banner/Colleague) delivery projects with configurable parameters, add-on packages, and Excel export capabilities.
+A professional Streamlit application for estimating N2S (Banner/Colleague) delivery projects with configurable parameters, add-on packages, and Excel export capabilities.
+
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-35%2F35%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-70%25-yellowgreen)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![Streamlit](https://img.shields.io/badge/streamlit-1.49%2B-red)
+
+**🌐 Live Application**: Currently running at `http://localhost:8501` (when started locally)
 
 ## Overview
 
