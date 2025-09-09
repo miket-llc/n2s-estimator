@@ -1072,9 +1072,9 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
                 pd.DataFrame(rows),
                 use_container_width=True,
                 num_rows="dynamic",
-                key="mix_editor",
-                help="Overrides the global split for selected roles. Each row must total 100%."
+                key="mix_editor"
             )
+            st.caption("Overrides the global split for selected roles. Each row must total 100%.")
             if st.button("Apply Per‑Role Mix"):
                 overrides = []
                 for _, r in df_mix.iterrows():
@@ -1133,9 +1133,9 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
                 'Onshore Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
                 'Offshore Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
                 'Partner Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
-            },
-            help="Rates are per role and locale. Editing here updates this scenario only. Hours do not change with locale; costs do."
+            }
         )
+        st.caption("Rates are per role and locale. Editing here updates this scenario only. Hours do not change with locale; costs do.")
 
         c1, c2, c3 = st.columns([1,1,1])
         with c1:
