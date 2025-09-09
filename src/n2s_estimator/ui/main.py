@@ -169,6 +169,101 @@ def render_sidebar() -> EstimationInputs:
         reports_complex_pct = 1.0 - reports_simple_pct - reports_standard_pct
         st.sidebar.write(f"Complex %: {reports_complex_pct:.2%}")
 
+    # Degree Works
+    st.sidebar.markdown("**Degree Works**")
+    include_degreeworks = st.sidebar.checkbox(
+        "Include Degree Works",
+        value=getattr(st.session_state.inputs, "include_degreeworks", False),
+        help="Adds Degree Works Setup (size-scaled) and PVE scribing volume to the estimate."
+    )
+
+    degreeworks_include_setup = True
+    degreeworks_use_pve_calculator = True
+    degreeworks_majors = degreeworks_minors = degreeworks_certificates = degreeworks_concentrations = 0
+    degreeworks_catalog_years = 1
+    degreeworks_pve_count = 0
+    dw_simple = 0.50
+    dw_standard = 0.35
+    dw_complex = 0.15
+
+    if include_degreeworks:
+        degreeworks_include_setup = st.sidebar.checkbox(
+            "Include Setup (size-scaled 300h @ Medium)",
+            value=getattr(st.session_state.inputs, "degreeworks_include_setup", True),
+            help="One-time Setup & Enablement for Degree Works: environment/config, integration, training, governance, testing."
+        )
+
+        degreeworks_use_pve_calculator = st.sidebar.checkbox(
+            "Use PVE Calculator",
+            value=getattr(st.session_state.inputs, "degreeworks_use_pve_calculator", True),
+            help="Program-Version Equivalents (PVEs) = (#Majors) + 0.5 × (#Minors + #Certificates + #Concentrations), then × (#Catalog Years)."
+        )
+
+        if degreeworks_use_pve_calculator:
+            st.sidebar.markdown("PVE Inputs:")
+            degreeworks_majors = st.sidebar.number_input(
+                "Majors", 
+                min_value=0, 
+                value=getattr(st.session_state.inputs, "degreeworks_majors", 0), 
+                step=1, 
+                help="Number of distinct Majors to scribe at go-live."
+            )
+            degreeworks_minors = st.sidebar.number_input(
+                "Minors", 
+                min_value=0, 
+                value=getattr(st.session_state.inputs, "degreeworks_minors", 0), 
+                step=1
+            )
+            degreeworks_certificates = st.sidebar.number_input(
+                "Certificates", 
+                min_value=0, 
+                value=getattr(st.session_state.inputs, "degreeworks_certificates", 0), 
+                step=1
+            )
+            degreeworks_concentrations = st.sidebar.number_input(
+                "Concentrations", 
+                min_value=0, 
+                value=getattr(st.session_state.inputs, "degreeworks_concentrations", 0), 
+                step=1
+            )
+            degreeworks_catalog_years = st.sidebar.number_input(
+                "Catalog Years", 
+                min_value=1, 
+                value=getattr(st.session_state.inputs, "degreeworks_catalog_years", 1), 
+                step=1, 
+                help="How many catalog years are included at go-live."
+            )
+            computed_pves = (degreeworks_majors + 0.5 * (degreeworks_minors + degreeworks_certificates + degreeworks_concentrations)) * degreeworks_catalog_years
+            st.sidebar.info(f"Computed PVEs: **{computed_pves:.1f}**")
+        else:
+            degreeworks_pve_count = st.sidebar.number_input(
+                "Direct PVE Count", 
+                min_value=0, 
+                value=getattr(st.session_state.inputs, "degreeworks_pve_count", 0), 
+                step=1, 
+                help="Override the calculator and specify total PVEs directly."
+            )
+
+        st.sidebar.markdown("PVE Complexity Mix:")
+        dw_simple = st.sidebar.slider(
+            "Simple %", 
+            min_value=0.0, 
+            max_value=1.0, 
+            value=getattr(st.session_state.inputs, "degreeworks_simple_pct", 0.50), 
+            step=0.05,
+            key="dw_simple"
+        )
+        dw_standard = st.sidebar.slider(
+            "Standard %", 
+            min_value=0.0, 
+            max_value=1.0 - dw_simple, 
+            value=min(getattr(st.session_state.inputs, "degreeworks_standard_pct", 0.35), 1.0 - dw_simple), 
+            step=0.05,
+            key="dw_standard"
+        )
+        dw_complex = 1.0 - dw_simple - dw_standard
+        st.sidebar.write(f"Complex %: {dw_complex:.2%}")
+
     st.sidebar.markdown("---")
 
     # Advanced Settings (collapsed by default)
@@ -243,7 +338,19 @@ def render_sidebar() -> EstimationInputs:
         reports_standard_pct=reports_standard_pct,
         reports_complex_pct=reports_complex_pct,
         include_integrations=include_integrations,
-        include_reports=include_reports
+        include_reports=include_reports,
+        include_degreeworks=include_degreeworks,
+        degreeworks_include_setup=degreeworks_include_setup,
+        degreeworks_use_pve_calculator=degreeworks_use_pve_calculator,
+        degreeworks_majors=degreeworks_majors,
+        degreeworks_minors=degreeworks_minors,
+        degreeworks_certificates=degreeworks_certificates,
+        degreeworks_concentrations=degreeworks_concentrations,
+        degreeworks_catalog_years=degreeworks_catalog_years,
+        degreeworks_pve_count=degreeworks_pve_count,
+        degreeworks_simple_pct=dw_simple,
+        degreeworks_standard_pct=dw_standard,
+        degreeworks_complex_pct=dw_complex
     )
 
     return inputs
@@ -290,7 +397,7 @@ def render_summary_cards(estimator: N2SEstimator, results: 'EstimationResults') 
     # Package breakdown
     st.markdown("### Package Breakdown")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         base_summary = package_summaries['Base N2S']
@@ -321,6 +428,17 @@ def render_summary_cards(estimator: N2SEstimator, results: 'EstimationResults') 
             )
         else:
             st.metric("Reports", "Disabled", "")
+
+    with col4:
+        dw_summary = package_summaries['Degree Works']
+        if dw_summary['enabled']:
+            st.metric(
+                "Degree Works",
+                f"{dw_summary['hours']:,.0f} hrs",
+                f"${dw_summary['cost']:,.0f}"
+            )
+        else:
+            st.metric("Degree Works", "Disabled", "")
 
 
 def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -> None:
@@ -535,6 +653,94 @@ def render_reports_tab(estimator: N2SEstimator, results: 'EstimationResults') ->
         )
 
 
+def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults') -> None:
+    """Render Degree Works analysis tab."""
+    st.subheader("Degree Works Add-on Package")
+
+    if not results.degreeworks_role_hours:
+        st.info("Degree Works package is not enabled.")
+        return
+
+    # Show Setup vs PVEs breakdown first
+    if results.degreeworks_hours:
+        st.markdown("#### Setup vs PVEs Breakdown")
+        setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
+        pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Setup Hours", f"{setup_hours:,.0f}", help="One-time setup and enablement (size-scaled)")
+        with col2:
+            st.metric("PVE Hours", f"{pve_hours:,.0f}", help="Program-Version Equivalents scribing")
+        with col3:
+            st.metric("Total DW Hours", f"{setup_hours + pve_hours:,.0f}")
+
+    # PVE Calculator Summary
+    inputs = results.inputs
+    if inputs.degreeworks_use_pve_calculator:
+        st.markdown("#### PVE Calculator Summary")
+        computed_pves = (
+            inputs.degreeworks_majors + 
+            0.5 * (inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations)
+        ) * inputs.degreeworks_catalog_years
+        
+        st.write(f"**Formula:** Majors + 0.5 × (Minors + Certificates + Concentrations) × Catalog Years")
+        st.write(f"**Calculation:** {inputs.degreeworks_majors} + 0.5 × ({inputs.degreeworks_minors} + {inputs.degreeworks_certificates} + {inputs.degreeworks_concentrations}) × {inputs.degreeworks_catalog_years} = **{computed_pves:.1f} PVEs**")
+
+    # Tier breakdown
+    st.markdown("#### Tier Breakdown")
+    tier_breakdown = estimator.addons.get_tier_breakdown('Degree Works', results.inputs)
+
+    if tier_breakdown:
+        tier_df = pd.DataFrame([
+            {
+                'Tier': tier,
+                'Count': data['count'],
+                'Unit Hours': data['unit_hours'],
+                'Total Hours': data['total_hours'],
+                'Mix %': data['mix_percentage']
+            }
+            for tier, data in tier_breakdown.items()
+        ])
+
+        tier_df['Count'] = tier_df['Count'].round(1)
+        tier_df['Total Hours'] = tier_df['Total Hours'].round(0)
+
+        st.dataframe(
+            tier_df,
+            use_container_width=True,
+            column_config={
+                'Mix %': st.column_config.NumberColumn(format="%.1%")
+            }
+        )
+
+    # Role breakdown
+    st.markdown("#### Role Breakdown")
+    if results.degreeworks_role_hours:
+        role_data = []
+        for rh in results.degreeworks_role_hours:
+            role_data.append({
+                'Role': rh.role,
+                'Hours': rh.total_hours,
+                'Cost': rh.total_cost,
+                'Blended Rate': rh.blended_rate
+            })
+
+        role_df = pd.DataFrame(role_data)
+        role_df['Hours'] = role_df['Hours'].round(1)
+        role_df['Cost'] = role_df['Cost'].round(0)
+        role_df['Blended Rate'] = role_df['Blended Rate'].round(0)
+
+        st.dataframe(
+            role_df,
+            use_container_width=True,
+            column_config={
+                'Cost': st.column_config.NumberColumn(format="$%d"),
+                'Blended Rate': st.column_config.NumberColumn(format="$%d/hr")
+            }
+        )
+
+
 def render_charts_tab(estimator: N2SEstimator, results: 'EstimationResults') -> None:
     """Render charts and visualizations."""
     st.subheader("Charts & Visualizations")
@@ -613,6 +819,88 @@ def render_charts_tab(estimator: N2SEstimator, results: 'EstimationResults') -> 
         st.plotly_chart(fig_bar, use_container_width=True)
 
 
+def render_help_tab() -> None:
+    """Render comprehensive help and documentation tab."""
+    st.subheader("How this estimate is built")
+    
+    # Pipeline explanation
+    st.markdown("### 📋 Estimation Pipeline")
+    st.markdown("""
+    **10-Step Process:**
+    
+    1. **Start from Base N2S baseline** (6,700h)
+    2. **Apply Size & Delivery Type multipliers** (Small 0.85x, Medium 1.0x, Large 1.25x, Very Large 1.5x; Modernization 0.9x, Net New 1.0x)
+    3. **Allocate to stages** via Stage Weights (Start 2.5%, Prepare 2.5%, Plan 10%, Configure 34%, Test 20%, Deploy 10%, etc.)
+    4. **Split presales vs delivery** by Activities/Stages (Start 60% presales, Prepare 30% presales, others 0%)
+    5. **Expand delivery hours to roles** by per-stage Role Mix (Configure heavily weighted to technical roles)
+    6. **Apply Onshore/Offshore/Partner split** (global 70/20/10 or per-role overrides)
+    7. **Price via rate cards** (selected Locale affects rates, not hours)
+    8. **Add-ons** (Integrations, Reports, Degree Works) computed similarly
+    9. **Subtotals by package** (Base N2S + enabled add-ons)
+    10. **Export** a styled Excel workbook with all breakdowns
+    """)
+    
+    # Degree Works Setup explanation
+    st.markdown("### 🏗️ Degree Works Setup (size-scaled)")
+    st.info("""
+    **One-time Setup & Enablement** (300h @ Medium, scaled by Size)
+    
+    **Covers:**
+    - Environment/config setup
+    - Integration with existing systems  
+    - Training and documentation
+    - Governance and workflows
+    - Testing and validation
+    
+    **Delivery only** (no presales component)
+    """)
+    
+    # Degree Works PVEs explanation  
+    st.markdown("### 📚 Degree Works PVEs (Program-Version Equivalents)")
+    st.info("""
+    **PVEs approximate** how many requirement blocks must be scribed at go-live:
+    
+    **Formula:** `PVEs = Majors + 0.5 × (Minors + Certificates + Concentrations) × Catalog Years`
+    
+    **Complexity tiers:**
+    - **Simple** (24h): Straightforward degree requirements
+    - **Standard** (48h): Moderate complexity with some conditional logic
+    - **Complex** (96h): Advanced requirements with extensive rules
+    
+    **You set the mix** based on your institution's catalog complexity.
+    
+    **Delivery only** (no presales component)
+    """)
+    
+    # Important notes
+    st.markdown("### ⚠️ Notes & Guardrails")
+    st.warning("""
+    **Key Rules:**
+    - **Only Setup is size-scaled** (300h → 375h for Large schools)
+    - **PVEs are NOT size-scaled** (complexity is independent of school size)
+    - **DegreeWorks Scribe is Banner-only** by default (Product Role Map)
+    - **All tier mixes must sum to 100%** (validated automatically)
+    - **Integrations & Reports** calculations remain completely unchanged
+    """)
+    
+    # Role distribution details
+    st.markdown("### 👥 Role Distributions")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Setup & PVE Simple:**")
+        st.write("- DegreeWorks Scribe: 70%")
+        st.write("- Functional Consultant: 20%") 
+        st.write("- Technical Architect: 10%")
+    
+    with col2:
+        st.markdown("**PVE Standard & Complex:**")
+        st.write("- **Standard:** DWS 60%, FC 25%, TA 15%")
+        st.write("- **Complex:** DWS 50%, FC 30%, TA 20%")
+        st.write("- *(More complex = more consulting/architecture)*")
+
+
 def render_assumptions_tab(results: 'EstimationResults') -> None:
     """Render assumptions and inputs summary."""
     st.subheader("Assumptions & Inputs")
@@ -647,6 +935,23 @@ def render_assumptions_tab(results: 'EstimationResults') -> None:
             st.write(f"  - Complex: {inputs.reports_complex_pct:.1%}")
         else:
             st.write("**Reports:** Disabled")
+
+        if inputs.include_degreeworks:
+            st.write("**Degree Works:**")
+            if inputs.degreeworks_include_setup:
+                st.write(f"  - Setup: 300h @ Medium (size-scaled)")
+            if inputs.degreeworks_use_pve_calculator:
+                computed_pves = (
+                    inputs.degreeworks_majors + 
+                    0.5 * (inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations)
+                ) * inputs.degreeworks_catalog_years
+                st.write(f"  - PVEs: {computed_pves:.1f} (calculated)")
+                st.write(f"    • Majors: {inputs.degreeworks_majors}, Others: {inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations}")
+            else:
+                st.write(f"  - PVEs: {inputs.degreeworks_pve_count} (direct)")
+            st.write(f"  - PVE Mix: Simple {inputs.degreeworks_simple_pct:.1%}, Standard {inputs.degreeworks_standard_pct:.1%}, Complex {inputs.degreeworks_complex_pct:.1%}")
+        else:
+            st.write("**Degree Works:** Disabled")
 
     # Multipliers
     st.markdown("#### Applied Multipliers")
@@ -700,8 +1005,8 @@ def main() -> None:
     render_summary_cards(estimator, results)
 
     # Tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "Base N2S", "Integrations", "Reports", "Charts", "Assumptions"
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        "Base N2S", "Integrations", "Reports", "Degree Works", "Charts", "How this estimate is built", "Assumptions"
     ])
 
     with tab1:
@@ -714,9 +1019,15 @@ def main() -> None:
         render_reports_tab(estimator, results)
 
     with tab4:
-        render_charts_tab(estimator, results)
+        render_degreeworks_tab(estimator, results)
 
     with tab5:
+        render_charts_tab(estimator, results)
+
+    with tab6:
+        render_help_tab()
+
+    with tab7:
         render_assumptions_tab(results)
 
     # Excel export

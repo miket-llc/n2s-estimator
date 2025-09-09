@@ -51,6 +51,10 @@ class EstimationEngine:
             delivery_hours=delivery_hours_dict
         )
 
+    def get_size_multiplier(self, size_band: str) -> float:
+        """Get size multiplier for the given size band."""
+        return self.config.size_multipliers.get(size_band, 1.0)
+
     def _calculate_presales_percentage(self, stage: str) -> float:
         """
         Calculate presales percentage for a stage.

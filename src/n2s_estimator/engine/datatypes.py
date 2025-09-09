@@ -1,6 +1,6 @@
 """Data models for N2S Estimator configuration and calculations."""
 
-
+from typing import Optional, Union, List, Dict
 from pydantic import BaseModel, Field, validator
 
 
@@ -43,7 +43,7 @@ class RateCard(BaseModel):
 
 class DeliveryMix(BaseModel):
     """Delivery mix percentages (global or per-role override)."""
-    role: str | None = None  # None = global
+    role: Optional[str] = None  # None = global
     onshore_pct: float = Field(ge=0.0, le=1.0)
     offshore_pct: float = Field(ge=0.0, le=1.0)
     partner_pct: float = Field(ge=0.0, le=1.0)
@@ -63,10 +63,11 @@ class AddOnTier(BaseModel):
     """Add-on tier definition with role distribution."""
     name: str
     unit_hours: float = Field(gt=0.0)
-    role_distribution: dict[str, float] = Field(...)
+    role_distribution: Dict[str, float] = Field(...)
+    scale_by_size: bool = Field(default=False)
 
     @validator('role_distribution')
-    def validate_role_distribution_sum(cls, v: dict[str, float]) -> dict[str, float]:
+    def validate_role_distribution_sum(cls, v: Dict[str, float]) -> Dict[str, float]:
         """Validate that role percentages sum to 1.0."""
         total = sum(v.values())
         if abs(total - 1.0) > 0.01:
@@ -77,7 +78,14 @@ class AddOnTier(BaseModel):
 class AddOnPackage(BaseModel):
     """Add-on package with multiple tiers."""
     name: str
-    tiers: list[AddOnTier]
+    tiers: List[AddOnTier]
+    scale_by_size: bool = Field(default=False)
+
+
+class RoleAlias(BaseModel):
+    """Role alias mapping for canonicalization."""
+    alias: str
+    canonical_role: str
 
 
 class ProductRoleToggle(BaseModel):
@@ -105,6 +113,21 @@ class EstimationInputs(BaseModel):
     reports_complex_pct: float = Field(default=0.15, ge=0.0, le=1.0)
     include_integrations: bool = Field(default=False)
     include_reports: bool = Field(default=False)
+    include_degreeworks: bool = Field(default=False)
+    degreeworks_include_setup: bool = Field(default=True)
+    degreeworks_use_pve_calculator: bool = Field(default=True)
+    # Calculator inputs
+    degreeworks_majors: int = Field(default=0, ge=0)
+    degreeworks_minors: int = Field(default=0, ge=0)
+    degreeworks_certificates: int = Field(default=0, ge=0)
+    degreeworks_concentrations: int = Field(default=0, ge=0)
+    degreeworks_catalog_years: int = Field(default=1, ge=1)
+    # Direct override when calculator off
+    degreeworks_pve_count: int = Field(default=0, ge=0)
+    # Tier mix for PVEs
+    degreeworks_simple_pct: float = Field(default=0.50, ge=0.0, le=1.0)
+    degreeworks_standard_pct: float = Field(default=0.35, ge=0.0, le=1.0)
+    degreeworks_complex_pct: float = Field(default=0.15, ge=0.0, le=1.0)
 
     @validator('integrations_complex_pct')
     def validate_integrations_mix(cls, v: float, values: dict) -> float:
@@ -126,12 +149,22 @@ class EstimationInputs(BaseModel):
             raise ValueError(f"Reports tier mix must sum to 1.0, got {total}")
         return v
 
+    @validator('degreeworks_complex_pct')
+    def validate_degreeworks_mix(cls, v: float, values: dict) -> float:
+        """Validate Degree Works PVE tier mix sums to 1.0."""
+        simple = values.get('degreeworks_simple_pct', 0.0)
+        standard = values.get('degreeworks_standard_pct', 0.0)
+        total = simple + standard + v
+        if abs(total - 1.0) > 0.001:
+            raise ValueError(f"Degree Works PVE tier mix must sum to 1.0, got {total}")
+        return v
+
 
 class StageHours(BaseModel):
     """Hours breakdown by stage."""
-    stage_hours: dict[str, float]
-    presales_hours: dict[str, float]
-    delivery_hours: dict[str, float]
+    stage_hours: Dict[str, float]
+    presales_hours: Dict[str, float]
+    delivery_hours: Dict[str, float]
 
 
 class RoleHours(BaseModel):
@@ -153,11 +186,13 @@ class EstimationResults(BaseModel):
     """Complete estimation results."""
     inputs: EstimationInputs
     base_n2s: StageHours
-    base_role_hours: list[RoleHours]
-    integrations_hours: StageHours | None = None
-    integrations_role_hours: list[RoleHours] | None = None
-    reports_hours: StageHours | None = None
-    reports_role_hours: list[RoleHours] | None = None
+    base_role_hours: List[RoleHours]
+    integrations_hours: Optional[StageHours] = None
+    integrations_role_hours: Optional[List[RoleHours]] = None
+    reports_hours: Optional[StageHours] = None
+    reports_role_hours: Optional[List[RoleHours]] = None
+    degreeworks_hours: Optional[StageHours] = None
+    degreeworks_role_hours: Optional[List[RoleHours]] = None
     total_presales_hours: float
     total_delivery_hours: float
     total_presales_cost: float
@@ -169,21 +204,22 @@ class EstimationResults(BaseModel):
 class ConfigurationData(BaseModel):
     """Complete configuration data loaded from workbook."""
     baseline_hours: float
-    stage_weights: list[StageWeight]
-    stages_presales: list[StagePresales]
-    activities: list[ActivityDef]
-    role_mix: list[RoleMix]
-    rates: list[RateCard]
-    delivery_mix: list[DeliveryMix]
-    addon_packages: list[AddOnPackage]
-    product_role_map: list[ProductRoleToggle]
-    size_multipliers: dict[str, float] = Field(default={
+    stage_weights: List[StageWeight]
+    stages_presales: List[StagePresales]
+    activities: List[ActivityDef]
+    role_mix: List[RoleMix]
+    rates: List[RateCard]
+    delivery_mix: List[DeliveryMix]
+    addon_packages: List[AddOnPackage]
+    product_role_map: List[ProductRoleToggle]
+    role_aliases: List[RoleAlias] = Field(default_factory=list)
+    size_multipliers: Dict[str, float] = Field(default={
         "Small": 0.85,
         "Medium": 1.00,
         "Large": 1.25,
         "Very Large": 1.50
     })
-    delivery_type_multipliers: dict[str, float] = Field(default={
+    delivery_type_multipliers: Dict[str, float] = Field(default={
         "Modernization": 0.90,
         "Net New": 1.00
     })

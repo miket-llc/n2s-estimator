@@ -1,5 +1,6 @@
 """Pricing and role expansion engine for N2S Delivery Estimator."""
 
+from typing import Dict, Tuple, Optional
 
 from .datatypes import (
     ConfigurationData,
@@ -17,8 +18,8 @@ class PricingEngine:
     def __init__(self, config: ConfigurationData) -> None:
         """Initialize pricing engine with configuration data."""
         self.config = config
-        self._rate_cache: dict[tuple[str, str], RateCard] = {}
-        self._delivery_mix_cache: dict[str | None, DeliveryMix] = {}
+        self._rate_cache: Dict[Tuple[str, str], RateCard] = {}
+        self._delivery_mix_cache: Dict[Optional[str], DeliveryMix] = {}
         self._build_caches()
 
     def _build_caches(self) -> None:

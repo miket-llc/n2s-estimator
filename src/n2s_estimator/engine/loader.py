@@ -1,6 +1,7 @@
 """Data loader for N2S Estimator configuration from Excel workbook."""
 
 from pathlib import Path
+from typing import Dict, Union
 
 import pandas as pd
 
@@ -12,6 +13,7 @@ from .datatypes import (
     DeliveryMix,
     ProductRoleToggle,
     RateCard,
+    RoleAlias,
     RoleMix,
     StagePresales,
     StageWeight,
@@ -24,11 +26,13 @@ class ConfigurationLoader:
     def __init__(self, workbook_path: Path) -> None:
         """Initialize loader with workbook path."""
         self.workbook_path = workbook_path
-        self._sheets: dict[str, pd.DataFrame] = {}
+        self._sheets: Dict[str, pd.DataFrame] = {}
+        self._role_aliases: Dict[str, str] = {}
 
     def load_configuration(self) -> ConfigurationData:
         """Load complete configuration from workbook."""
         self._load_all_sheets()
+        self._load_role_aliases()  # Load aliases first
 
         return ConfigurationData(
             baseline_hours=self._load_baseline_hours(),
@@ -39,7 +43,8 @@ class ConfigurationLoader:
             rates=self._load_rates(),
             delivery_mix=self._load_delivery_mix(),
             addon_packages=self._load_addon_packages(),
-            product_role_map=self._load_product_role_map()
+            product_role_map=self._load_product_role_map(),
+            role_aliases=self._get_role_aliases_list()
         )
 
     def _load_all_sheets(self) -> None:
@@ -55,6 +60,26 @@ class ConfigurationLoader:
                 self._sheets[sheet_name] = df
         except Exception as e:
             raise ValueError(f"Failed to load workbook {self.workbook_path}: {e}")
+
+    def _role_canonical(self, role_name: str) -> str:
+        """Return canonical role name, applying aliases if found."""
+        return self._role_aliases.get(role_name, role_name)
+
+    def _load_role_aliases(self) -> None:
+        """Load role aliases for canonicalization."""
+        if 'Role Aliases' not in self._sheets:
+            return  # No aliases sheet, skip
+            
+        df = self._sheets['Role Aliases']
+        for _, row in df.iterrows():
+            alias = row['Alias']
+            canonical = row['Canonical Role']
+            self._role_aliases[alias] = canonical
+
+    def _get_role_aliases_list(self) -> list:
+        """Convert role aliases dict to list of RoleAlias objects."""
+        return [RoleAlias(alias=alias, canonical_role=canonical) 
+                for alias, canonical in self._role_aliases.items()]
 
     def _load_baseline_hours(self) -> float:
         """Load baseline hours from Inputs sheet."""
@@ -130,7 +155,7 @@ class ConfigurationLoader:
 
             role_mix.append(RoleMix(
                 stage=row['Stage'],
-                role=row['Role'],
+                role=self._role_canonical(row['Role']),  # Apply canonicalization
                 pct=float(row['Role Mix %'])
             ))
 
@@ -153,7 +178,7 @@ class ConfigurationLoader:
 
             for _, row in df.iterrows():
                 rates.append(RateCard(
-                    role=row['Role'],
+                    role=self._role_canonical(row['Role']),  # Apply canonicalization
                     locale=row['Locale'],
                     onshore=float(row['Onshore Rate']),
                     offshore=float(row['Offshore Rate']),
@@ -168,7 +193,7 @@ class ConfigurationLoader:
 
         for _, row in df.iterrows():
             rates.append(RateCard(
-                role=row['Role'],
+                role=self._role_canonical(row['Role']),  # Apply canonicalization
                 locale='US',
                 onshore=float(row['Onshore Rate']),
                 offshore=float(row['Offshore Rate']),
@@ -184,7 +209,7 @@ class ConfigurationLoader:
 
         for _, row in df.iterrows():
             # Handle global row (Role is None/NaN)
-            role = None if pd.isna(row['Role']) or row['Role'] == 'nan' else row['Role']
+            role = None if pd.isna(row['Role']) or row['Role'] == 'nan' else self._role_canonical(row['Role'])
 
             delivery_mix.append(DeliveryMix(
                 role=role,
@@ -201,45 +226,55 @@ class ConfigurationLoader:
             return []
 
         df = self._sheets['Add-On Catalog']
-        packages_dict: dict[str, dict[str, dict[str, float | dict[str, float]]]] = {}
+        packages_dict: Dict[str, Dict[str, Dict[str, Union[float, Dict[str, float]]]]] = {}
 
         # Group by package and tier
         for _, row in df.iterrows():
             package_name = row['Package']
             tier_name = row['Tier']
-            role = row['Role']
+            role = self._role_canonical(row['Role'])  # Apply canonicalization
             role_pct = float(row['Role %'])
             unit_hours = float(row['Unit Hours'])
+            scale_by_size = bool(row.get('Scale By Size', 0))  # Per-tier flag
 
             if package_name not in packages_dict:
-                packages_dict[package_name] = {}
+                packages_dict[package_name] = {'tiers': {}}
 
-            if tier_name not in packages_dict[package_name]:
-                packages_dict[package_name][tier_name] = {
+            if tier_name not in packages_dict[package_name]['tiers']:
+                packages_dict[package_name]['tiers'][tier_name] = {
                     'unit_hours': unit_hours,
-                    'role_distribution': {}
+                    'role_distribution': {},
+                    'scale_by_size': scale_by_size  # Store per-tier
                 }
 
-            tier_data = packages_dict[package_name][tier_name]
+            tier_data = packages_dict[package_name]['tiers'][tier_name]
             if isinstance(tier_data['role_distribution'], dict):
                 tier_data['role_distribution'][role] = role_pct
 
         # Convert to AddOnPackage objects
         packages = []
-        for package_name, tiers_dict in packages_dict.items():
+        for package_name, package_data in packages_dict.items():
             tiers = []
-            for tier_name, tier_data in tiers_dict.items():
+            
+            for tier_name, tier_data in package_data['tiers'].items():
                 unit_hours = tier_data['unit_hours']
                 role_dist = tier_data['role_distribution']
+                tier_scale_by_size = tier_data.get('scale_by_size', False)
+                
                 if isinstance(unit_hours, (int, float)) and isinstance(role_dist, dict):
                     tiers.append(AddOnTier(
                         name=tier_name,
                         unit_hours=float(unit_hours),
-                        role_distribution=role_dist
+                        role_distribution=role_dist,
+                        scale_by_size=tier_scale_by_size  # Per-tier flag
                     ))
 
+            # Keep package-level flag for backward compatibility (any tier scales)
+            package_scale_by_size = any(tier_data.get('scale_by_size', False) for tier_data in package_data['tiers'].values())
+            
             packages.append(AddOnPackage(
                 name=package_name,
+                scale_by_size=package_scale_by_size,
                 tiers=tiers
             ))
 
@@ -255,7 +290,7 @@ class ConfigurationLoader:
 
         for _, row in df.iterrows():
             role_map.append(ProductRoleToggle(
-                role=row['Role'],
+                role=self._role_canonical(row['Role']),  # Apply canonicalization
                 banner_enabled=bool(row['Banner Enabled']),
                 colleague_enabled=bool(row['Colleague Enabled']),
                 multiplier=float(row.get('Multiplier', 1.0))

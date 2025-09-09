@@ -1,6 +1,7 @@
 """Main orchestration engine that coordinates all N2S estimation components."""
 
 from pathlib import Path
+from typing import Optional, List, Dict
 
 from .addons import AddOnEngine
 from .datatypes import ConfigurationData, EstimationInputs, EstimationResults, RoleHours, StageHours
@@ -16,11 +17,11 @@ class N2SEstimator:
     def __init__(self, workbook_path: Path) -> None:
         """Initialize estimator with workbook path."""
         self.workbook_path = workbook_path
-        self.config: ConfigurationData | None = None
-        self.estimator: EstimationEngine | None = None
-        self.pricing: PricingEngine | None = None
-        self.addons: AddOnEngine | None = None
-        self.validator: ConfigurationValidator | None = None
+        self.config: Optional[ConfigurationData] = None
+        self.estimator: Optional[EstimationEngine] = None
+        self.pricing: Optional[PricingEngine] = None
+        self.addons: Optional[AddOnEngine] = None
+        self.validator: Optional[ConfigurationValidator] = None
 
         self._load_configuration()
 
@@ -68,6 +69,11 @@ class N2SEstimator:
         if inputs.include_reports:
             reports_stage_hours, reports_role_hours = self.addons.calculate_reports(inputs)
 
+        degreeworks_stage_hours = None
+        degreeworks_role_hours = None
+        if inputs.include_degreeworks:
+            degreeworks_stage_hours, degreeworks_role_hours = self.addons.calculate_degreeworks(inputs)
+
         # 3. Calculate totals
         totals = self._calculate_totals(
             base_stage_hours,
@@ -75,7 +81,9 @@ class N2SEstimator:
             integrations_stage_hours,
             integrations_role_hours,
             reports_stage_hours,
-            reports_role_hours
+            reports_role_hours,
+            degreeworks_stage_hours,
+            degreeworks_role_hours
         )
 
         return EstimationResults(
@@ -86,18 +94,22 @@ class N2SEstimator:
             integrations_role_hours=integrations_role_hours,
             reports_hours=reports_stage_hours,
             reports_role_hours=reports_role_hours,
+            degreeworks_hours=degreeworks_stage_hours,
+            degreeworks_role_hours=degreeworks_role_hours,
             **totals
         )
 
     def _calculate_totals(
         self,
         base_stage_hours: StageHours,
-        base_role_hours: list[RoleHours],
-        integrations_stage_hours: StageHours | None,
-        integrations_role_hours: list[RoleHours] | None,
-        reports_stage_hours: StageHours | None,
-        reports_role_hours: list[RoleHours] | None
-    ) -> dict:
+        base_role_hours: List[RoleHours],
+        integrations_stage_hours: Optional[StageHours],
+        integrations_role_hours: Optional[List[RoleHours]],
+        reports_stage_hours: Optional[StageHours],
+        reports_role_hours: Optional[List[RoleHours]],
+        degreeworks_stage_hours: Optional[StageHours],
+        degreeworks_role_hours: Optional[List[RoleHours]]
+    ) -> Dict:
         """Calculate total hours and costs across all packages."""
         # Base totals
         base_presales_hours = sum(base_stage_hours.presales_hours.values())
@@ -116,6 +128,10 @@ class N2SEstimator:
         if reports_stage_hours and reports_role_hours:
             addon_delivery_hours += sum(reports_stage_hours.delivery_hours.values())
             addon_delivery_cost += sum(rh.total_cost for rh in reports_role_hours)
+
+        if degreeworks_stage_hours and degreeworks_role_hours:
+            addon_delivery_hours += sum(degreeworks_stage_hours.delivery_hours.values())
+            addon_delivery_cost += sum(rh.total_cost for rh in degreeworks_role_hours)
 
         # Grand totals
         total_presales_hours = base_presales_hours
@@ -208,6 +224,22 @@ class N2SEstimator:
                 'enabled': False
             }
 
+        # Degree Works
+        if results.degreeworks_hours and results.degreeworks_role_hours:
+            dw_hours = sum(results.degreeworks_hours.stage_hours.values())
+            dw_cost = sum(rh.total_cost for rh in results.degreeworks_role_hours)
+            summaries['Degree Works'] = {
+                'hours': dw_hours,
+                'cost': dw_cost,
+                'enabled': True
+            }
+        else:
+            summaries['Degree Works'] = {
+                'hours': 0.0,
+                'cost': 0.0,
+                'enabled': False
+            }
+
         return summaries
 
     def get_delivery_split_summary(self, results: EstimationResults) -> dict:
@@ -219,6 +251,9 @@ class N2SEstimator:
 
         if results.reports_role_hours:
             all_role_hours.extend(results.reports_role_hours)
+
+        if results.degreeworks_role_hours:
+            all_role_hours.extend(results.degreeworks_role_hours)
 
         total_onshore_hours = sum(rh.onshore_hours for rh in all_role_hours)
         total_offshore_hours = sum(rh.offshore_hours for rh in all_role_hours)

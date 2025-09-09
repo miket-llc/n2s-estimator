@@ -266,3 +266,334 @@ class TestDeterministicMath:
         # Both should be positive
         assert banner_total > 0, "Banner total hours should be > 0"
         assert colleague_total > 0, "Colleague total hours should be > 0"
+
+    def test_role_canonicalization(self, estimator):
+        """Test that role canonicalization works correctly."""
+        # Check that Business Analyst has been replaced with Functional Consultant
+        config = estimator.config
+        
+        # No deprecated roles should exist in the final config
+        all_roles = set()
+        all_roles.update(rm.role for rm in config.role_mix)
+        all_roles.update(rt.role for rt in config.rates)
+        all_roles.update(prm.role for prm in config.product_role_map)
+        
+        deprecated_roles = {'Business Analyst', 'Platform Lead', 'Technical Lead'}
+        found_deprecated = deprecated_roles & all_roles
+        
+        # Should have canonical roles
+        expected_canonical = {'Functional Consultant', 'Technical Architect', 'Integration Engineer', 'Extensibility Engineer', 'DegreeWorks Scribe'}
+        found_canonical = expected_canonical & all_roles
+        
+        assert len(found_deprecated) == 0, f"Found deprecated roles: {found_deprecated}"
+        assert len(found_canonical) == len(expected_canonical), f"Missing canonical roles: {expected_canonical - found_canonical}"
+
+    def test_degreeworks_setup_baseline_medium(self, estimator):
+        """Test Degree Works Setup-only calculation with Medium baseline (300 hours)."""
+        inputs = EstimationInputs(
+            product="Banner",
+            size_band="Medium",
+            include_degreeworks=True,
+            degreeworks_include_setup=True,
+            degreeworks_use_pve_calculator=True,
+            degreeworks_majors=0,  # No PVEs, Setup only
+            degreeworks_minors=0,
+            degreeworks_certificates=0,
+            degreeworks_concentrations=0,
+            degreeworks_catalog_years=1
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Should have Degree Works results
+        assert results.degreeworks_hours is not None, "Degree Works hours should not be None"
+        assert results.degreeworks_role_hours is not None, "Degree Works role hours should not be None"
+        
+        # Only Setup should be present
+        setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
+        pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
+        
+        assert abs(setup_hours - 300.0) < 0.01, f"Setup hours {setup_hours} != 300.0"
+        assert abs(pve_hours) < 0.01, f"PVE hours should be 0, got {pve_hours}"
+        
+        # Role distribution should match Setup tier: 70/20/10
+        role_hours = {rh.role: rh.total_hours for rh in results.degreeworks_role_hours}
+        
+        assert 'DegreeWorks Scribe' in role_hours, "DegreeWorks Scribe should be present"
+        assert 'Functional Consultant' in role_hours, "Functional Consultant should be present"
+        assert 'Technical Architect' in role_hours, "Technical Architect should be present"
+        
+        # Check approximate distribution (Setup tier: 70/20/10)
+        dw_scribe_hours = role_hours['DegreeWorks Scribe']
+        fc_hours = role_hours['Functional Consultant']
+        ta_hours = role_hours['Technical Architect']
+        
+        assert abs(dw_scribe_hours - 210.0) < 1.0, f"DegreeWorks Scribe hours {dw_scribe_hours} != ~210 (70%)"
+        assert abs(fc_hours - 60.0) < 1.0, f"Functional Consultant hours {fc_hours} != ~60 (20%)"
+        assert abs(ta_hours - 30.0) < 1.0, f"Technical Architect hours {ta_hours} != ~30 (10%)"
+
+    def test_degreeworks_size_scaling_with_integrations_reports(self, estimator):
+        """Test that only DW Setup scales by size while Integrations/Reports and DW PVEs do not."""
+        base_inputs = EstimationInputs(
+            product="Banner",
+            size_band="Medium",
+            include_degreeworks=True,
+            degreeworks_include_setup=True,
+            degreeworks_use_pve_calculator=False,
+            degreeworks_pve_count=50,  # Fixed PVE count for testing
+            degreeworks_simple_pct=0.50,
+            degreeworks_standard_pct=0.35,
+            degreeworks_complex_pct=0.15,
+            include_integrations=True,
+            integrations_count=30,
+            include_reports=True,
+            reports_count=40
+        )
+        
+        large_inputs = base_inputs.model_copy(update={'size_band': 'Large'})
+        
+        medium_results = estimator.estimate(base_inputs)
+        large_results = estimator.estimate(large_inputs)
+        
+        # Degree Works Setup should scale: 300 -> 375, but PVEs should not scale
+        medium_setup = medium_results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0) if medium_results.degreeworks_hours else 0
+        large_setup = large_results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0) if large_results.degreeworks_hours else 0
+        
+        assert abs(medium_setup - 300.0) < 1.0, f"Medium Setup {medium_setup} != 300"
+        assert abs(large_setup - 375.0) < 1.0, f"Large Setup {large_setup} != 375"
+        
+        # PVEs should NOT scale
+        medium_pve = medium_results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0) if medium_results.degreeworks_hours else 0
+        large_pve = large_results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0) if large_results.degreeworks_hours else 0
+        
+        assert abs(medium_pve - large_pve) < 1.0, f"PVE hours should not scale: Medium {medium_pve} vs Large {large_pve}"
+        
+        # Integrations should NOT scale (should be same)
+        medium_int = sum(medium_results.integrations_hours.stage_hours.values()) if medium_results.integrations_hours else 0
+        large_int = sum(large_results.integrations_hours.stage_hours.values()) if large_results.integrations_hours else 0
+        
+        assert abs(medium_int - large_int) < 1.0, f"Integrations should not scale: Medium {medium_int} vs Large {large_int}"
+        
+        # Reports should NOT scale (should be same)
+        medium_rep = sum(medium_results.reports_hours.stage_hours.values()) if medium_results.reports_hours else 0
+        large_rep = sum(large_results.reports_hours.stage_hours.values()) if large_results.reports_hours else 0
+        
+        assert abs(medium_rep - large_rep) < 1.0, f"Reports should not scale: Medium {medium_rep} vs Large {large_rep}"
+
+    def test_degreeworks_product_role_map(self, estimator):
+        """Test that DegreeWorks Scribe is disabled for Colleague."""
+        banner_inputs = EstimationInputs(
+            product="Banner",
+            include_degreeworks=True,
+            degreeworks_include_setup=True,
+            degreeworks_use_pve_calculator=False,
+            degreeworks_pve_count=50
+        )
+        
+        colleague_inputs = banner_inputs.model_copy(update={'product': 'Colleague'})
+        
+        banner_results = estimator.estimate(banner_inputs)
+        colleague_results = estimator.estimate(colleague_inputs)
+        
+        # Banner should have DegreeWorks Scribe hours
+        banner_roles = {rh.role: rh.total_hours for rh in banner_results.degreeworks_role_hours or []}
+        assert 'DegreeWorks Scribe' in banner_roles, "Banner should have DegreeWorks Scribe"
+        assert banner_roles['DegreeWorks Scribe'] > 0, "Banner DegreeWorks Scribe should have hours"
+        
+        # Colleague should NOT have DegreeWorks Scribe hours (disabled by product map)
+        colleague_roles = {rh.role: rh.total_hours for rh in colleague_results.degreeworks_role_hours or []}
+        dw_scribe_hours = colleague_roles.get('DegreeWorks Scribe', 0)
+        assert dw_scribe_hours == 0, f"Colleague DegreeWorks Scribe should have 0 hours, got {dw_scribe_hours}"
+        
+        # But Colleague should still have some Degree Works hours from other roles
+        colleague_dw_total = sum(colleague_results.degreeworks_hours.stage_hours.values()) if colleague_results.degreeworks_hours else 0
+        assert colleague_dw_total > 0, "Colleague should still have some Degree Works hours from other roles"
+
+    def test_no_regressions_base_hours(self, estimator, default_inputs):
+        """Test that Base N2S hours are unchanged with new role canonicalization."""
+        results = estimator.estimate(default_inputs)
+        
+        # Base total should still be exactly 6,700
+        total_hours = sum(results.base_n2s.stage_hours.values())
+        assert abs(total_hours - 6700.0) < 0.01, f"Base N2S total hours {total_hours} != 6700.0 (regression detected)"
+        
+        # Presales should still be 150.75
+        total_presales = sum(results.base_n2s.presales_hours.values())
+        assert abs(total_presales - 150.75) < 0.01, f"Total presales hours {total_presales} != 150.75 (regression detected)"
+
+    def test_integrations_reports_unchanged(self, estimator):
+        """Test that Integrations and Reports expected totals are preserved."""
+        inputs = EstimationInputs(
+            product="Banner",
+            include_integrations=True,
+            integrations_count=30,
+            integrations_simple_pct=0.60,
+            integrations_standard_pct=0.30,
+            integrations_complex_pct=0.10,
+            include_reports=True,
+            reports_count=40,
+            reports_simple_pct=0.50,
+            reports_standard_pct=0.35,
+            reports_complex_pct=0.15
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Integrations: 30 * (0.6 * 80 + 0.3 * 160 + 0.1 * 320) = 3,840
+        int_hours = sum(results.integrations_hours.stage_hours.values()) if results.integrations_hours else 0
+        assert abs(int_hours - 3840.0) < 1.0, f"Integrations hours {int_hours} != 3840 (regression detected)"
+        
+        # Reports: 40 * (0.5 * 24 + 0.35 * 72 + 0.15 * 160) = 2,448
+        rep_hours = sum(results.reports_hours.stage_hours.values()) if results.reports_hours else 0
+        assert abs(rep_hours - 2448.0) < 1.0, f"Reports hours {rep_hours} != 2448 (regression detected)"
+
+    def test_degreeworks_acceptance_scenario(self, estimator):
+        """Test Degree Works acceptance scenario with exact math."""
+        # Banner, Net New, Medium, US; DW with Setup + Calculator
+        # Majors=60, Minors=40, Certs=10, Conc=15, CatalogYears=1; Mix 0.50/0.35/0.15
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New", 
+            size_band="Medium",
+            locale="US",
+            include_degreeworks=True,
+            degreeworks_include_setup=True,
+            degreeworks_use_pve_calculator=True,
+            degreeworks_majors=60,
+            degreeworks_minors=40,
+            degreeworks_certificates=10,
+            degreeworks_concentrations=15,
+            degreeworks_catalog_years=1,
+            degreeworks_simple_pct=0.50,
+            degreeworks_standard_pct=0.35,
+            degreeworks_complex_pct=0.15
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Expected: PVEs = 60 + 0.5*(40+10+15) = 60 + 32.5 = 92.5
+        # Expected: PVE hours = 92.5 * (0.5*24 + 0.35*48 + 0.15*96) = 92.5 * 43.2 = 3996
+        # Expected: Setup hours = 300 (Medium, no scaling)
+        # Expected: Total = 4296
+        
+        assert results.degreeworks_hours is not None, "Degree Works hours should not be None"
+        
+        setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
+        pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
+        
+        assert abs(setup_hours - 300.0) < 0.01, f"Setup hours {setup_hours} != 300"
+        assert abs(pve_hours - 3996.0) < 1.0, f"PVE hours {pve_hours} != 3996"
+        
+        total_dw = setup_hours + pve_hours
+        assert abs(total_dw - 4296.0) < 1.0, f"Total DW hours {total_dw} != 4296"
+
+    def test_degreeworks_large_size_scaling(self, estimator):
+        """Test that only Setup scales with Large size (1.25x), PVEs unchanged."""
+        inputs = EstimationInputs(
+            product="Banner",
+            size_band="Large",  # 1.25x multiplier
+            include_degreeworks=True,
+            degreeworks_include_setup=True,
+            degreeworks_use_pve_calculator=True,
+            degreeworks_majors=60,
+            degreeworks_minors=40,
+            degreeworks_certificates=10,
+            degreeworks_concentrations=15,
+            degreeworks_catalog_years=1,
+            degreeworks_simple_pct=0.50,
+            degreeworks_standard_pct=0.35,
+            degreeworks_complex_pct=0.15
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Expected: Setup = 300 * 1.25 = 375
+        # Expected: PVEs = 3996 (unchanged)
+        # Expected: Total = 4371
+        
+        setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
+        pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
+        
+        assert abs(setup_hours - 375.0) < 0.01, f"Large Setup hours {setup_hours} != 375"
+        assert abs(pve_hours - 3996.0) < 1.0, f"Large PVE hours {pve_hours} != 3996 (should be unchanged)"
+        
+        total_dw = setup_hours + pve_hours
+        assert abs(total_dw - 4371.0) < 1.0, f"Large Total DW hours {total_dw} != 4371"
+
+    def test_degreeworks_setup_only(self, estimator):
+        """Test Degree Works with only Setup, no PVEs."""
+        inputs = EstimationInputs(
+            product="Banner",
+            size_band="Medium",
+            include_degreeworks=True,
+            degreeworks_include_setup=True,
+            degreeworks_use_pve_calculator=True,
+            degreeworks_majors=0,  # No PVEs
+            degreeworks_minors=0,
+            degreeworks_certificates=0,
+            degreeworks_concentrations=0,
+            degreeworks_catalog_years=1
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Should have Setup but no PVEs
+        assert results.degreeworks_hours is not None, "Should have Degree Works hours"
+        
+        setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
+        pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
+        
+        assert abs(setup_hours - 300.0) < 0.01, f"Setup-only hours {setup_hours} != 300"
+        assert abs(pve_hours) < 0.01, f"PVE hours should be 0, got {pve_hours}"
+
+    def test_degreeworks_pves_only(self, estimator):
+        """Test Degree Works with only PVEs, no Setup."""
+        inputs = EstimationInputs(
+            product="Banner",
+            size_band="Medium",
+            include_degreeworks=True,
+            degreeworks_include_setup=False,  # No Setup
+            degreeworks_use_pve_calculator=False,
+            degreeworks_pve_count=100,  # Direct PVE count
+            degreeworks_simple_pct=0.50,
+            degreeworks_standard_pct=0.35,
+            degreeworks_complex_pct=0.15
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Should have PVEs but no Setup
+        assert results.degreeworks_hours is not None, "Should have Degree Works hours"
+        
+        setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
+        pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
+        
+        assert abs(setup_hours) < 0.01, f"Setup hours should be 0, got {setup_hours}"
+        
+        # Expected PVEs: 100 * (0.5*24 + 0.35*48 + 0.15*96) = 100 * 43.2 = 4320
+        expected_pve = 100 * (0.5 * 24 + 0.35 * 48 + 0.15 * 96)
+        assert abs(pve_hours - expected_pve) < 1.0, f"PVE-only hours {pve_hours} != {expected_pve}"
+
+    def test_degreeworks_colleague_product_map(self, estimator):
+        """Test that DegreeWorks Scribe is properly disabled for Colleague."""
+        inputs = EstimationInputs(
+            product="Colleague",  # DegreeWorks Scribe disabled
+            include_degreeworks=True,
+            degreeworks_include_setup=True,
+            degreeworks_use_pve_calculator=False,
+            degreeworks_pve_count=50,
+            degreeworks_simple_pct=0.50,
+            degreeworks_standard_pct=0.35,
+            degreeworks_complex_pct=0.15
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Should have Degree Works but no DegreeWorks Scribe hours
+        if results.degreeworks_role_hours:
+            dw_scribe_hours = sum(rh.total_hours for rh in results.degreeworks_role_hours if rh.role == 'DegreeWorks Scribe')
+            assert dw_scribe_hours == 0, f"Colleague should have 0 DegreeWorks Scribe hours, got {dw_scribe_hours}"
+            
+            # Should still have hours from other roles (FC, TA)
+            other_hours = sum(rh.total_hours for rh in results.degreeworks_role_hours if rh.role != 'DegreeWorks Scribe')
+            assert other_hours > 0, "Colleague should have some Degree Works hours from other roles"

@@ -146,7 +146,7 @@ class TestEndToEnd:
         sizes = ["Small", "Medium", "Large", "Very Large"]
         size_multipliers = [0.85, 1.00, 1.25, 1.50]
 
-        for size, multiplier in zip(sizes, size_multipliers, strict=False):
+        for size, multiplier in zip(sizes, size_multipliers):
             inputs = base_inputs.model_copy(update={'size_band': size})
             results = estimator.estimate(inputs)
 
@@ -159,7 +159,7 @@ class TestEndToEnd:
         delivery_types = ["Net New", "Modernization"]
         delivery_multipliers = [1.00, 0.90]
 
-        for delivery_type, multiplier in zip(delivery_types, delivery_multipliers, strict=False):
+        for delivery_type, multiplier in zip(delivery_types, delivery_multipliers):
             inputs = base_inputs.model_copy(update={'delivery_type': delivery_type})
             results = estimator.estimate(inputs)
 

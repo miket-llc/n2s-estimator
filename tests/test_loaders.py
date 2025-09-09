@@ -80,8 +80,8 @@ class TestConfigurationLoader:
         us_rates = [r for r in config.rates if r.locale == 'US']
         assert len(us_rates) > 0, "No rates found for US locale"
 
-        # Check that we have rates for key roles
-        key_roles = ['Project Manager', 'Solution Architect', 'Technical Lead']
+        # Check that we have rates for key roles (updated for canonical roles)
+        key_roles = ['Project Manager', 'Solution Architect', 'Technical Architect', 'Functional Consultant']
         us_roles = [r.role for r in us_rates]
 
         for role in key_roles:
@@ -90,18 +90,24 @@ class TestConfigurationLoader:
     def test_addon_packages_structure(self, config):
         """Test add-on packages structure."""
         package_names = [p.name for p in config.addon_packages]
-        expected_packages = ['Integrations', 'Reports']
+        expected_packages = ['Integrations', 'Reports', 'Degree Works']
 
         for expected in expected_packages:
             assert expected in package_names, f"Missing add-on package '{expected}'"
 
-        # Check tier structure
+        # Check tier structure per package
         for package in config.addon_packages:
             tier_names = [t.name for t in package.tiers]
-            expected_tiers = ['Simple', 'Standard', 'Complex']
-
-            for expected_tier in expected_tiers:
-                assert expected_tier in tier_names, f"Missing tier '{expected_tier}' in package '{package.name}'"
+            
+            if package.name in ['Integrations', 'Reports']:
+                expected_tiers = ['Simple', 'Standard', 'Complex']
+                for expected_tier in expected_tiers:
+                    assert expected_tier in tier_names, f"Missing tier '{expected_tier}' in package '{package.name}'"
+            elif package.name == 'Degree Works':
+                expected_dw_tiers = ['Setup', 'PVE Simple', 'PVE Standard', 'PVE Complex']
+                for expected_tier in expected_dw_tiers:
+                    assert expected_tier in tier_names, f"Missing '{expected_tier}' tier in Degree Works package"
+                assert len(tier_names) == 4, f"Degree Works should have 4 tiers, found: {tier_names}"
 
     def test_addon_tier_role_distributions(self, config):
         """Test that add-on tier role distributions sum to 1.0."""
@@ -118,8 +124,8 @@ class TestConfigurationLoader:
         if config.product_role_map:
             roles = [prm.role for prm in config.product_role_map]
 
-            # Should have key roles
-            key_roles = ['Project Manager', 'Solution Architect', 'Technical Lead']
+            # Should have key canonical roles
+            key_roles = ['Project Manager', 'Solution Architect', 'Technical Architect', 'Functional Consultant']
             for role in key_roles:
                 assert role in roles, f"Product role map missing role '{role}'"
 
