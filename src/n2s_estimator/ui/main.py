@@ -21,7 +21,7 @@ from n2s_estimator.export.excel import ExcelExporter
 # Page configuration
 st.set_page_config(
     page_title="N2S Delivery Estimator",
-    page_icon=None,
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
