@@ -96,6 +96,11 @@ class ExcelExporter:
             'subtitle': self.workbook.add_format({
                 'font_size': 12,
                 'bold': True
+            }),
+            'note': self.workbook.add_format({
+                'font_size': 10,
+                'font_color': '#666666',
+                'italic': True
             })
         }
 
@@ -343,13 +348,14 @@ class ExcelExporter:
         self._autofit_columns(worksheet, 4)
 
     def _create_rates_and_mixes_sheet(self, results: EstimationResults, estimator: N2SEstimator) -> None:
-        """Create rates and delivery mixes sheet."""
+        """Create effective rates and delivery mixes sheet."""
         worksheet = self.workbook.add_worksheet('Rates & Mixes')
 
-        worksheet.write(0, 0, 'Rates & Delivery Mixes', self.formats['title'])
+        worksheet.write(0, 0, 'Effective Rates & Delivery Mixes', self.formats['title'])
+        worksheet.write(1, 0, 'Source: Workbook defaults + Runtime overrides', self.formats['note'])
 
         # Effective rates for selected locale
-        row = 2
+        row = 3
         worksheet.write(row, 0, f'Rates for {results.inputs.locale}', self.formats['subtitle'])
         row += 1
 
@@ -358,23 +364,13 @@ class ExcelExporter:
             worksheet.write(row, col, header, self.formats['header'])
         row += 1
 
-        # Get unique roles from results
-        roles = set()
-        for rh in results.base_role_hours:
-            roles.add(rh.role)
-        if results.integrations_role_hours:
-            for rh in results.integrations_role_hours:
-                roles.add(rh.role)
-        if results.reports_role_hours:
-            for rh in results.reports_role_hours:
-                roles.add(rh.role)
-
-        for role in sorted(roles):
-            rates = estimator.pricing._get_rates(role, results.inputs.locale)
-            worksheet.write(row, 0, role)
-            worksheet.write(row, 1, rates.onshore, self.formats['currency'])
-            worksheet.write(row, 2, rates.offshore, self.formats['currency'])
-            worksheet.write(row, 3, rates.partner, self.formats['currency'])
+        # Get effective rates using new API
+        effective_rates = estimator.pricing.get_effective_rates(locale=results.inputs.locale)
+        for rate in effective_rates:
+            worksheet.write(row, 0, rate.role)
+            worksheet.write(row, 1, rate.onshore, self.formats['currency'])
+            worksheet.write(row, 2, rate.offshore, self.formats['currency'])
+            worksheet.write(row, 3, rate.partner, self.formats['currency'])
             row += 1
 
         # Delivery mixes
@@ -382,33 +378,40 @@ class ExcelExporter:
         worksheet.write(row, 0, 'Delivery Mixes', self.formats['subtitle'])
         row += 1
 
-        mix_headers = ['Role', 'Onshore %', 'Offshore %', 'Partner %']
+        mix_headers = ['Role', 'Onshore %', 'Offshore %', 'Partner %', 'Source']
         for col, header in enumerate(mix_headers):
             worksheet.write(row, col, header, self.formats['header'])
         row += 1
 
-        # Global mix
-        global_mix = estimator.pricing._get_delivery_split(None)  # Global
-        worksheet.write(row, 0, 'Global (Default)')
-        worksheet.write(row, 1, global_mix.onshore_pct, self.formats['percent'])
-        worksheet.write(row, 2, global_mix.offshore_pct, self.formats['percent'])
-        worksheet.write(row, 3, global_mix.partner_pct, self.formats['percent'])
-        row += 1
+        # Get effective delivery mixes using new API
+        effective_mixes = estimator.pricing.get_effective_delivery_mix()
+        
+        # Global mix (role=None)
+        global_mix = None
+        for mix in effective_mixes:
+            if mix.role is None:
+                global_mix = mix
+                break
+        
+        if global_mix:
+            worksheet.write(row, 0, 'Global (Default)')
+            worksheet.write(row, 1, global_mix.onshore_pct, self.formats['percent'])
+            worksheet.write(row, 2, global_mix.offshore_pct, self.formats['percent'])
+            worksheet.write(row, 3, global_mix.partner_pct, self.formats['percent'])
+            worksheet.write(row, 4, 'Workbook' if not hasattr(estimator.pricing, '_delivery_mix_cache') or estimator.pricing._delivery_mix_cache.get(None) is None else 'Overridden')
+            row += 1
 
         # Per-role overrides
-        for role in sorted(roles):
-            role_mix = estimator.pricing._get_delivery_split(role)
-            # Only show if different from global
-            if (role_mix.onshore_pct != global_mix.onshore_pct or
-                role_mix.offshore_pct != global_mix.offshore_pct or
-                role_mix.partner_pct != global_mix.partner_pct):
-                worksheet.write(row, 0, f'{role} (Override)')
-                worksheet.write(row, 1, role_mix.onshore_pct, self.formats['percent'])
-                worksheet.write(row, 2, role_mix.offshore_pct, self.formats['percent'])
-                worksheet.write(row, 3, role_mix.partner_pct, self.formats['percent'])
+        for mix in effective_mixes:
+            if mix.role is not None:
+                worksheet.write(row, 0, f'{mix.role} (Override)')
+                worksheet.write(row, 1, mix.onshore_pct, self.formats['percent'])
+                worksheet.write(row, 2, mix.offshore_pct, self.formats['percent'])
+                worksheet.write(row, 3, mix.partner_pct, self.formats['percent'])
+                worksheet.write(row, 4, 'Workbook' if not hasattr(estimator.pricing, '_delivery_mix_cache') or estimator.pricing._delivery_mix_cache.get(mix.role) is None else 'Overridden')
                 row += 1
 
-        self._autofit_columns(worksheet, 4)
+        self._autofit_columns(worksheet, 5)
 
     def _create_assumptions_sheet(self, results: EstimationResults) -> None:
         """Create assumptions and inputs sheet."""

@@ -292,3 +292,39 @@ class N2SEstimator:
             'offshore': {'hours': 0, 'cost': 0, 'hours_pct': 0, 'cost_pct': 0},
             'partner': {'hours': 0, 'cost': 0, 'hours_pct': 0, 'cost_pct': 0}
         }
+
+    def apply_rate_overrides(self, overrides: list[dict]) -> None:
+        """Apply rate overrides to the pricing engine."""
+        if not self.pricing:
+            return
+        for row in overrides:
+            self.pricing.update_rate(
+                role=row['role'], 
+                locale=row['locale'],
+                onshore=float(row['onshore']), 
+                offshore=float(row['offshore']), 
+                partner=float(row['partner'])
+            )
+
+    def apply_delivery_mix_overrides(self, global_mix: Optional[dict], role_overrides: list[dict]) -> None:
+        """Apply delivery mix overrides to the pricing engine."""
+        if not self.pricing:
+            return
+        if global_mix:
+            self.pricing.update_global_delivery_mix(
+                float(global_mix['onshore_pct']), 
+                float(global_mix['offshore_pct']), 
+                float(global_mix['partner_pct'])
+            )
+        for row in role_overrides:
+            self.pricing.update_role_delivery_mix(
+                role=row['role'],
+                onshore_pct=float(row['onshore_pct']),
+                offshore_pct=float(row['offshore_pct']),
+                partner_pct=float(row['partner_pct'])
+            )
+
+    def reset_pricing_overrides(self) -> None:
+        """Reset pricing overrides to workbook defaults."""
+        if self.pricing:
+            self.pricing.reset_from_config()

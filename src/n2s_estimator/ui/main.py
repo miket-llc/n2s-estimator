@@ -13,8 +13,9 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-from n2s_estimator.engine.datatypes import EstimationInputs
+from n2s_estimator.engine.datatypes import EstimationInputs, DeliveryMix
 from n2s_estimator.engine.orchestrator import N2SEstimator
+from n2s_estimator.engine.validators import validate_pricing_overrides
 from n2s_estimator.export.excel import ExcelExporter
 
 # Page configuration
@@ -39,6 +40,12 @@ def initialize_session_state() -> None:
         st.session_state.inputs = EstimationInputs()
     if 'results' not in st.session_state:
         st.session_state.results = None
+    if 'rate_overrides' not in st.session_state:
+        st.session_state.rate_overrides = []  # list of {role, locale, onshore, offshore, partner}
+    if 'global_mix_override' not in st.session_state:
+        st.session_state.global_mix_override = None  # {onshore_pct, offshore_pct, partner_pct}
+    if 'role_mix_overrides' not in st.session_state:
+        st.session_state.role_mix_overrides = []  # list of {role, onshore_pct, offshore_pct, partner_pct}
 
 
 def render_sidebar() -> EstimationInputs:
@@ -299,7 +306,12 @@ def render_sidebar() -> EstimationInputs:
                 'reports_simple_pct': reports_simple_pct,
                 'reports_standard_pct': reports_standard_pct,
                 'reports_complex_pct': reports_complex_pct,
-                'maturity_factor': maturity_factor
+                'maturity_factor': maturity_factor,
+                'scenario_overrides': {
+                    'rate_overrides': st.session_state.rate_overrides,
+                    'global_mix_override': st.session_state.global_mix_override,
+                    'role_mix_overrides': st.session_state.role_mix_overrides
+                }
             }
             st.download_button(
                 "Download JSON",
@@ -318,6 +330,24 @@ def render_sidebar() -> EstimationInputs:
             try:
                 scenario_data = json.loads(uploaded_file.read())
                 st.session_state.inputs = EstimationInputs(**scenario_data)
+                
+                # Load pricing overrides if present
+                if 'scenario_overrides' in scenario_data:
+                    overrides = scenario_data['scenario_overrides']
+                    st.session_state.rate_overrides = overrides.get('rate_overrides', [])
+                    st.session_state.global_mix_override = overrides.get('global_mix_override', None)
+                    st.session_state.role_mix_overrides = overrides.get('role_mix_overrides', [])
+                    
+                    # Apply overrides to estimator
+                    estimator = load_estimator()
+                    if st.session_state.rate_overrides:
+                        estimator.apply_rate_overrides(st.session_state.rate_overrides)
+                    if st.session_state.global_mix_override or st.session_state.role_mix_overrides:
+                        estimator.apply_delivery_mix_overrides(
+                            st.session_state.global_mix_override, 
+                            st.session_state.role_mix_overrides
+                        )
+                
                 st.rerun()
             except Exception as e:
                 st.error(f"Error loading scenario: {e}")
@@ -966,6 +996,178 @@ def render_assumptions_tab(results: 'EstimationResults') -> None:
     st.write("- Net New: 1.00x")
 
 
+def render_rates_tab(estimator: N2SEstimator) -> None:
+    """Render Rates & Mixes editor tab."""
+    st.subheader("Rates & Mixes")
+    
+    # Show validation warnings for current overrides
+    pricing_warnings = validate_pricing_overrides(
+        st.session_state.rate_overrides,
+        st.session_state.global_mix_override,
+        st.session_state.role_mix_overrides
+    )
+    
+    if pricing_warnings:
+        with st.expander("⚠️ Pricing Override Warnings", expanded=True):
+            for warning in pricing_warnings:
+                st.warning(warning)
+
+    # --- Delivery Mix Editors ---
+    st.markdown("### Delivery Mix")
+    col_g, col_r = st.columns([1, 2])
+
+    with col_g:
+        st.markdown("**Global Delivery Split**")
+        # Start with effective current global or defaults
+        eff_mix = estimator.pricing._delivery_mix_cache.get(None) if estimator.pricing else None
+        g_on = st.number_input(
+            "Onshore %", 
+            min_value=0.0, 
+            max_value=1.0,
+            value=(eff_mix.onshore_pct if eff_mix else 0.70), 
+            step=0.05, 
+            key="g_on",
+            help="Sets the default Onshore/Offshore/Partner percentages for all roles not explicitly overridden. Must total 100%."
+        )
+        g_off = st.number_input(
+            "Offshore %", 
+            min_value=0.0, 
+            max_value=1.0,
+            value=(eff_mix.offshore_pct if eff_mix else 0.20), 
+            step=0.05, 
+            key="g_off"
+        )
+        g_pa = 1.0 - g_on - g_off
+        st.write(f"Partner %: {g_pa:.2f}")
+        if abs(g_on + g_off + g_pa - 1.0) > 0.001:
+            st.error("Global mix must sum to 1.0")
+        if st.button("Apply Global Mix"):
+            st.session_state.global_mix_override = {
+                'onshore_pct': g_on, 
+                'offshore_pct': g_off, 
+                'partner_pct': g_pa
+            }
+            estimator.apply_delivery_mix_overrides(st.session_state.global_mix_override, [])
+            st.success("Global delivery mix applied.")
+
+    with col_r:
+        st.markdown("**Per‑Role Delivery Overrides**")
+        # Build a frame of effective per-role mix for enabled roles
+        if estimator.pricing:
+            roles = sorted(set(rm.role for rm in estimator.config.role_mix))
+            rows = []
+            for role in roles:
+                dm = estimator.pricing._delivery_mix_cache.get(role)
+                if not dm:
+                    # show global values for reference
+                    base = estimator.pricing._delivery_mix_cache.get(None)
+                    dm = base or DeliveryMix(role=role, onshore_pct=0.70, offshore_pct=0.20, partner_pct=0.10)
+                rows.append({
+                    'Role': role,
+                    'Onshore %': round(dm.onshore_pct, 3),
+                    'Offshore %': round(dm.offshore_pct, 3),
+                    'Partner %': round(dm.partner_pct, 3)
+                })
+            df_mix = st.data_editor(
+                pd.DataFrame(rows),
+                use_container_width=True,
+                num_rows="dynamic",
+                key="mix_editor",
+                help="Overrides the global split for selected roles. Each row must total 100%."
+            )
+            if st.button("Apply Per‑Role Mix"):
+                overrides = []
+                for _, r in df_mix.iterrows():
+                    total = float(r['Onshore %']) + float(r['Offshore %']) + float(r['Partner %'])
+                    if abs(total - 1.0) > 0.001:
+                        st.error(f"Mix for role {r['Role']} must sum to 1.0")
+                        st.stop()
+                    overrides.append({
+                        'role': r['Role'],
+                        'onshore_pct': float(r['Onshore %']),
+                        'offshore_pct': float(r['Offshore %']),
+                        'partner_pct': float(r['Partner %'])
+                    })
+                st.session_state.role_mix_overrides = overrides
+                estimator.apply_delivery_mix_overrides(None, overrides)
+                st.success("Per‑role delivery overrides applied.")
+
+    st.markdown("---")
+
+    # --- Rates Editor ---
+    st.markdown("### Rate Cards")
+    col_l, col_a = st.columns([1, 3])
+
+    with col_l:
+        locale_selector = st.selectbox("Locale to edit", ["US", "Canada", "UK", "EU", "ANZ", "MENA"], index=0)
+        show_all = st.checkbox("Show all locales table", value=False, help="If unchecked, edits the selected locale only.")
+        st.info("Tip: Hours are unaffected by locale; rates change cost only.")
+
+    # Build editable DataFrame of rates
+    if estimator.pricing:
+        if show_all:
+            rc_list = estimator.pricing.get_effective_rates(locale=None)
+            data = [{
+                'Role': rc.role, 
+                'Locale': rc.locale,
+                'Onshore Rate': rc.onshore, 
+                'Offshore Rate': rc.offshore, 
+                'Partner Rate': rc.partner
+            } for rc in rc_list]
+        else:
+            rc_list = estimator.pricing.get_effective_rates(locale=locale_selector)
+            data = [{
+                'Role': rc.role, 
+                'Locale': locale_selector,
+                'Onshore Rate': rc.onshore, 
+                'Offshore Rate': rc.offshore, 
+                'Partner Rate': rc.partner
+            } for rc in rc_list]
+
+        df_rates = st.data_editor(
+            pd.DataFrame(data),
+            use_container_width=True,
+            num_rows="dynamic",
+            key="rates_editor",
+            column_config={
+                'Onshore Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
+                'Offshore Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
+                'Partner Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
+            },
+            help="Rates are per role and locale. Editing here updates this scenario only. Hours do not change with locale; costs do."
+        )
+
+        c1, c2, c3 = st.columns([1,1,1])
+        with c1:
+            if st.button("Apply Rates"):
+                overrides = []
+                for _, r in df_rates.iterrows():
+                    # basic validation
+                    if r['Onshore Rate'] <= 0 or r['Offshore Rate'] <= 0 or r['Partner Rate'] <= 0:
+                        st.error(f"Rates must be > 0 for role {r['Role']} ({r['Locale']})")
+                        st.stop()
+                    overrides.append({
+                        'role': r['Role'],
+                        'locale': r['Locale'],
+                        'onshore': float(r['Onshore Rate']),
+                        'offshore': float(r['Offshore Rate']),
+                        'partner': float(r['Partner Rate'])
+                    })
+                st.session_state.rate_overrides = overrides
+                estimator.apply_rate_overrides(overrides)
+                st.success("Rates applied.")
+        with c2:
+            if st.button("Reset to Workbook Defaults", help="Discard all runtime pricing overrides and reload workbook rates & mixes."):
+                estimator.reset_pricing_overrides()
+                st.session_state.rate_overrides = []
+                st.session_state.global_mix_override = None
+                st.session_state.role_mix_overrides = []
+                st.info("Pricing reset to workbook values. Re‑run estimation if needed.")
+        with c3:
+            if st.button("Recalculate with Current Pricing"):
+                st.rerun()
+
+
 def main() -> None:
     """Main application entry point."""
     initialize_session_state()
@@ -1005,8 +1207,8 @@ def main() -> None:
     render_summary_cards(estimator, results)
 
     # Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-        "Base N2S", "Integrations", "Reports", "Degree Works", "Charts", "How this estimate is built", "Assumptions"
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+        "Base N2S", "Integrations", "Reports", "Degree Works", "Charts", "How this estimate is built", "Assumptions", "Rates & Mixes"
     ])
 
     with tab1:
@@ -1029,6 +1231,9 @@ def main() -> None:
 
     with tab7:
         render_assumptions_tab(results)
+
+    with tab8:
+        render_rates_tab(estimator)
 
     # Excel export
     st.markdown("---")

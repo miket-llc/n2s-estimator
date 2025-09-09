@@ -233,6 +233,59 @@ class PricingEngine:
 
         return sorted(summaries, key=lambda x: x.total_cost, reverse=True)
 
+    def update_rate(self, role: str, locale: str, onshore: float, offshore: float, partner: float) -> None:
+        """Update rate for a specific role and locale."""
+        assert onshore > 0 and offshore > 0 and partner > 0, "All rates must be positive"
+        self._rate_cache[(role, locale)] = RateCard(
+            role=role, locale=locale, onshore=onshore, offshore=offshore, partner=partner
+        )
+
+    def update_global_delivery_mix(self, onshore_pct: float, offshore_pct: float, partner_pct: float) -> None:
+        """Update global delivery mix (applies to all roles without per-role overrides)."""
+        assert abs(onshore_pct + offshore_pct + partner_pct - 1.0) < 1e-6, "Delivery mix must sum to 1.0"
+        self._delivery_mix_cache[None] = DeliveryMix(
+            role=None, onshore_pct=onshore_pct, offshore_pct=offshore_pct, partner_pct=partner_pct
+        )
+
+    def update_role_delivery_mix(self, role: str, onshore_pct: float, offshore_pct: float, partner_pct: float) -> None:
+        """Update delivery mix for a specific role."""
+        assert abs(onshore_pct + offshore_pct + partner_pct - 1.0) < 1e-6, "Delivery mix must sum to 1.0"
+        self._delivery_mix_cache[role] = DeliveryMix(
+            role=role, onshore_pct=onshore_pct, offshore_pct=offshore_pct, partner_pct=partner_pct
+        )
+
+    def get_effective_rates(self, locale: Optional[str] = None) -> list[RateCard]:
+        """Get effective rates for UI display."""
+        if locale:
+            # Return rates for specific locale, with US fallback
+            roles = sorted(set(rm.role for rm in self.config.role_mix))
+            out = []
+            for role in roles:
+                # Prefer exact (role, locale), else fallback to US
+                rc = self._rate_cache.get((role, locale)) or self._rate_cache.get((role, 'US'))
+                if rc:
+                    out.append(rc)
+            return out
+        return list(self._rate_cache.values())
+
+    def get_effective_delivery_mix(self) -> list[DeliveryMix]:
+        """Get effective delivery mix for UI display."""
+        return [
+            DeliveryMix(
+                role=k, 
+                onshore_pct=v.onshore_pct, 
+                offshore_pct=v.offshore_pct, 
+                partner_pct=v.partner_pct
+            )
+            for k, v in self._delivery_mix_cache.items()
+        ]
+
+    def reset_from_config(self) -> None:
+        """Reset caches to workbook values."""
+        self._rate_cache.clear()
+        self._delivery_mix_cache.clear()
+        self._build_caches()
+
     def summarize_by_stage(self, role_hours_list: list[RoleHours]) -> list[RoleHours]:
         """Summarize role hours by stage."""
         stage_summaries: dict[str, dict[str, float]] = {}

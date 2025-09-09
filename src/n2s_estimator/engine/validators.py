@@ -270,3 +270,45 @@ def validate_estimation_inputs(inputs: 'EstimationInputs') -> list[str]:
                 warnings.append(f"Degree Works direct PVE count ({inputs.degreeworks_pve_count}) seems very high")
 
     return warnings
+
+
+def validate_pricing_overrides(rate_overrides: list[dict], global_mix_override: dict, role_mix_overrides: list[dict]) -> list[str]:
+    """Validate pricing overrides for rates and delivery mixes."""
+    warnings = []
+    
+    # Validate rate overrides
+    for i, rate_override in enumerate(rate_overrides):
+        if rate_override.get('onshore', 0) <= 0:
+            warnings.append(f"Rate override {i+1}: Onshore rate must be > 0")
+        if rate_override.get('offshore', 0) <= 0:
+            warnings.append(f"Rate override {i+1}: Offshore rate must be > 0")
+        if rate_override.get('partner', 0) <= 0:
+            warnings.append(f"Rate override {i+1}: Partner rate must be > 0")
+    
+    # Validate global mix override
+    if global_mix_override:
+        onshore = global_mix_override.get('onshore_pct', 0)
+        offshore = global_mix_override.get('offshore_pct', 0)
+        partner = global_mix_override.get('partner_pct', 0)
+        total = onshore + offshore + partner
+        
+        if abs(total - 1.0) > 0.001:
+            warnings.append(f"Global delivery mix must sum to 1.0, got {total:.3f}")
+        
+        if onshore < 0 or offshore < 0 or partner < 0:
+            warnings.append("Global delivery mix percentages must be >= 0")
+    
+    # Validate role mix overrides
+    for i, role_override in enumerate(role_mix_overrides):
+        onshore = role_override.get('onshore_pct', 0)
+        offshore = role_override.get('offshore_pct', 0)
+        partner = role_override.get('partner_pct', 0)
+        total = onshore + offshore + partner
+        
+        if abs(total - 1.0) > 0.001:
+            warnings.append(f"Role mix override {i+1} ({role_override.get('role', 'Unknown')}) must sum to 1.0, got {total:.3f}")
+        
+        if onshore < 0 or offshore < 0 or partner < 0:
+            warnings.append(f"Role mix override {i+1} ({role_override.get('role', 'Unknown')}) percentages must be >= 0")
+    
+    return warnings
