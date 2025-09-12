@@ -31,7 +31,7 @@ echo "💡 Press Ctrl+C to stop"
 echo ""
 
 if [ -d "venv" ]; then
-    streamlit run src/n2s_estimator/ui/main.py
+    python -m streamlit run src/n2s_estimator/ui/main.py
 else
     python3 -m streamlit run src/n2s_estimator/ui/main.py
 fi

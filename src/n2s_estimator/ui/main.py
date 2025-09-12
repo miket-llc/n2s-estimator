@@ -1041,7 +1041,7 @@ def render_help_tab() -> None:
         st.write("- *(More complex = more consulting/architecture)*")
 
 
-def render_assumptions_tab(results: 'EstimationResults') -> None:
+def render_assumptions_tab(results: 'EstimationResults', estimator: 'N2SEstimator') -> None:
     """Render assumptions and inputs summary."""
     st.subheader("Assumptions & Inputs")
 
@@ -1058,11 +1058,6 @@ def render_assumptions_tab(results: 'EstimationResults') -> None:
         st.write(f"**Maturity Factor:** {inputs.maturity_factor:.2f}")
         
         st.markdown("#### Applied Multipliers")
-        # Get the estimator to access config
-        from src.n2s_estimator.engine.orchestrator import N2SEstimator
-        from pathlib import Path
-        estimator = N2SEstimator(Path('src/n2s_estimator/data/n2s_estimator.xlsx'))
-        
         # Product delivery type multiplier
         product_mult = (
             estimator.config.product_delivery_type_multipliers
@@ -1388,7 +1383,7 @@ def main() -> None:
         render_help_tab()
 
     with tab7:
-        render_assumptions_tab(results)
+        render_assumptions_tab(results, estimator)
 
     with tab8:
         render_rates_tab(estimator)
