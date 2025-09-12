@@ -594,6 +594,7 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
     with col2:
         # Role summary
         st.markdown("#### Role Summary")
+        st.caption("Base N2S roles only")
         role_summary = estimator.get_role_summary(results)
         if role_summary:
             role_df = pd.DataFrame([{
