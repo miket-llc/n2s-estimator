@@ -341,6 +341,7 @@ The application shows warnings for:
 - **Repository**: https://github.com/miket-llc/n2s-estimator
 
 ### Getting Help
+- **Slack Channel**: Join [#help-n2s-estimator](https://ellucian.enterprise.slack.com/archives/C09EZA9JWR0) for real-time support and community discussions
 - **Configuration Warnings**: Check the warnings section in the UI
 - **Validation Errors**: Review error messages for guidance
 - **Scenario Issues**: Try loading default scenarios
