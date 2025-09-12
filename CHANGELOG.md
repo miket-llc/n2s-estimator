@@ -171,7 +171,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic fallback to code defaults when workbook sheets are missing
 - Enhanced validation with warnings for disabled packages
 
-#### UI/UX Improvements
+#### UI/UX Improvements (v0.11.0)
 
 - Applied Multipliers section in Assumptions tab showing active product scaling
 - Product multiplier tables in Help tab with research rationale
