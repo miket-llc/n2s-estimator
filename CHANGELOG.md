@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.2] - 2024-12-19
 
-### Added (v0.12.2)
+### Added
 
 #### Comprehensive Excel Export Enhancement
 
@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All 20+ Degree Works parameters fully documented
 - Stage × Role cost matrix for detailed analysis
 
-### Changed (v0.12.2)
+### Changed
 
 #### Excel Export Architecture
 
@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.1] - 2024-12-19
 
-### Added (v0.12.2)
+### Added
 
 #### Version Display Enhancement
 
@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package-level version metadata for programmatic access
 - Clear version identification throughout the application
 
-### Changed (v0.12.2)
+### Changed
 
 #### Tab Organization
 
@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.0] - 2024-12-19
 
-### Added (v0.12.2)
+### Added
 
 #### Comprehensive Scenario Management Enhancement
 
@@ -85,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backward compatibility testing for minimal scenario data
 - Complete workflow testing from save to load to estimation
 
-### Changed (v0.12.2)
+### Changed
 
 #### Scenario Management Architecture
 
@@ -102,14 +102,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced ambiguous Unicode characters with ASCII equivalents
 - Enhanced type annotations and function signatures
 
-#### UI/UX Enhancements (v0.12.0)
+#### UI/UX Enhancements
 
 - Improved line length compliance and code formatting
 - Better error messages and user feedback
 - Enhanced scenario management UI with success/error indicators
 - Consistent character encoding throughout codebase
 
-### Fixed (v0.12.0)
+### Fixed
 
 #### Scenario Management Issues
 
@@ -127,7 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.11.0] - 2024-12-19
 
-### Added (v0.12.2)
+### Added
 
 #### Colleague vs Banner Product Differentiation
 
@@ -156,7 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI controls for enabling/disabling caps and overriding cap values
 - Clear warnings when Setup hours approach or exceed cap limits
 
-### Changed (v0.12.2)
+### Changed
 
 #### Product-Specific Role Filtering
 
@@ -165,13 +165,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DegreeWorks Scribe Banner-only enforcement through product package multipliers
 - Preserved methodology integrity by removing disabled role hours rather than redistributing
 
-#### Enhanced Configuration Management (v0.11.0)
+#### Enhanced Configuration Management
 
 - New Product Multipliers and Product Package Multipliers workbook sheets
 - Automatic fallback to code defaults when workbook sheets are missing
 - Enhanced validation with warnings for disabled packages
 
-#### UI/UX Improvements (v0.11.0)
+#### UI/UX Improvements
 
 - Applied Multipliers section in Assumptions tab showing active product scaling
 - Product multiplier tables in Help tab with research rationale
@@ -183,27 +183,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced data formatting with consistent number precision (hours to 1 decimal, costs as currency)
 
 
-#### Data Model Enhancements (v0.11.0)
+#### Data Model Enhancements
 
 - Extended ConfigurationData with product_delivery_type_multipliers and product_package_multipliers
 - Added product_notes field for research citations and rationale
 - Enhanced EstimationInputs with Sprint 0 uplift and Degree Works cap controls
 
-#### Engine Improvements (v0.11.0)
+#### Engine Improvements
 
 - Product scaling applied in base estimation before stage allocation
 - Add-on calculations now apply product package multipliers after role filtering
 - Enhanced validation with product-specific package multiplier warnings
 - Maintained deterministic methodology while adding product differentiation
 
-#### Workbook Structure (v0.11.0)
+#### Workbook Structure
 
 - Added Product Multipliers sheet with Product, Delivery Type, Multiplier columns
 - Added Product Package Multipliers sheet with Product, Package, Multiplier, Notes columns
 - Updated Product Role Map to reflect Colleague-specific role availability
 - Regenerated n2s_estimator.xlsx with all new configuration data
 
-### Fixed (v0.12.0)
+### Fixed
 
 - Fixed relative import error in render_assumptions_tab function
 - Resolved Streamlit deprecation warnings for use_container_width parameter
@@ -212,7 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.0] - 2024-12-19
 
-### Added (v0.12.2)
+### Added
 
 #### Enhanced User Interface
 
@@ -232,9 +232,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved chart rendering and interactive features
 - Better visual representation of estimation data and results
 
-### Fixed (v0.12.0)
+### Fixed
 
-#### UI Improvements (v0.11.0)
+#### UI Improvements
 
 - Removed unsupported help parameter from data_editor components
 - Improved compatibility and stability of data editing interfaces
@@ -249,7 +249,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.0] - 2024-01-20
 
-### Added (v0.12.2)
+### Added
 
 #### Core Functionality
 
