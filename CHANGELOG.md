@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.2] - 2024-12-19
 
-### Added
+### Added (v0.12.2)
 
 #### Comprehensive Excel Export Enhancement
 
@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All 20+ Degree Works parameters fully documented
 - Stage × Role cost matrix for detailed analysis
 
-### Changed
+### Changed (v0.12.2)
 
 #### Excel Export Architecture
 
@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.1] - 2024-12-19
 
-### Added
+### Added (v0.12.2)
 
 #### Version Display Enhancement
 
@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package-level version metadata for programmatic access
 - Clear version identification throughout the application
 
-### Changed
+### Changed (v0.12.2)
 
 #### Tab Organization
 
@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.0] - 2024-12-19
 
-### Added
+### Added (v0.12.2)
 
 #### Comprehensive Scenario Management Enhancement
 
@@ -85,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backward compatibility testing for minimal scenario data
 - Complete workflow testing from save to load to estimation
 
-### Changed
+### Changed (v0.12.2)
 
 #### Scenario Management Architecture
 
@@ -109,7 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced scenario management UI with success/error indicators
 - Consistent character encoding throughout codebase
 
-### Fixed
+### Fixed (v0.12.0)
 
 #### Scenario Management Issues
 
@@ -127,7 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.11.0] - 2024-12-19
 
-### Added
+### Added (v0.12.2)
 
 #### Colleague vs Banner Product Differentiation
 
@@ -156,7 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI controls for enabling/disabling caps and overriding cap values
 - Clear warnings when Setup hours approach or exceed cap limits
 
-### Changed
+### Changed (v0.12.2)
 
 #### Product-Specific Role Filtering
 
@@ -182,7 +182,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved visual alignment between Package Summary and Role Summary sections
 - Enhanced data formatting with consistent number precision (hours to 1 decimal, costs as currency)
 
-### Technical
 
 #### Data Model Enhancements (v0.11.0)
 
@@ -204,7 +203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Product Role Map to reflect Colleague-specific role availability
 - Regenerated n2s_estimator.xlsx with all new configuration data
 
-### Fixed
+### Fixed (v0.12.0)
 
 - Fixed relative import error in render_assumptions_tab function
 - Resolved Streamlit deprecation warnings for use_container_width parameter
@@ -213,7 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.0] - 2024-12-19
 
-### Added
+### Added (v0.12.2)
 
 #### Enhanced User Interface
 
@@ -233,7 +232,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved chart rendering and interactive features
 - Better visual representation of estimation data and results
 
-### Fixed
+### Fixed (v0.12.0)
 
 #### UI Improvements (v0.11.0)
 
@@ -250,7 +249,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.0] - 2024-01-20
 
-### Added
+### Added (v0.12.2)
 
 #### Core Functionality
 
