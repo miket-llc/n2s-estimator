@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+New features.
+
 #### Version Display Enhancement
 
 - Version display in sidebar caption and main page header
@@ -49,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clear version identification throughout the application
 
 ### Changed
+
+Updated features.
 
 #### Tab Organization
 
@@ -59,6 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.12.0] - 2024-12-19
 
 ### Added
+
+New features.
 
 #### Comprehensive Scenario Management Enhancement
 
@@ -128,6 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.11.0] - 2024-12-19
 
 ### Added
+
+New features.
 
 #### Colleague vs Banner Product Differentiation
 
