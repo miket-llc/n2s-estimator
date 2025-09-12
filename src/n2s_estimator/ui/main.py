@@ -1414,17 +1414,33 @@ def render_user_guide_tab() -> None:
     
     # Load and display the user guide content
     try:
-        guide_path = Path(__file__).parent.parent.parent / "docs" / "USER_GUIDE.md"
+        # Try multiple possible paths
+        possible_paths = [
+            Path(__file__).parent.parent.parent / "docs" / "USER_GUIDE.md",
+            Path.cwd() / "docs" / "USER_GUIDE.md",
+            Path("/Users/miket/dev/n2s-estimator/docs/USER_GUIDE.md")
+        ]
+        
+        guide_path = None
+        for path in possible_paths:
+            if path.exists():
+                guide_path = path
+                break
+        
+        if guide_path is None:
+            st.error(f"User guide file not found. Tried paths: {[str(p) for p in possible_paths]}")
+            return
+            
         with open(guide_path, 'r', encoding='utf-8') as f:
             guide_content = f.read()
         
         # Display the markdown content
         st.markdown(guide_content)
         
-    except FileNotFoundError:
-        st.error("User guide file not found. Please ensure docs/USER_GUIDE.md exists.")
     except Exception as e:
         st.error(f"Error loading user guide: {e}")
+        st.error(f"Current working directory: {Path.cwd()}")
+        st.error(f"File path: {Path(__file__)}")
     
     # Add quick navigation
     st.markdown("---")
