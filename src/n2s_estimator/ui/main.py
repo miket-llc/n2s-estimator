@@ -50,7 +50,7 @@ def initialize_session_state() -> None:
 
 def render_sidebar() -> EstimationInputs:
     """Render sidebar controls and return estimation inputs."""
-    st.sidebar.title("📊 N2S Estimator")
+    st.sidebar.title("N2S Estimator")
     st.sidebar.markdown("---")
 
     # Core Parameters
@@ -1351,7 +1351,7 @@ def main() -> None:
         st.stop()
 
     # Main content area
-    st.title("📊 N2S Delivery Estimator")
+    st.title("N2S Delivery Estimator")
 
     # Display validation warnings
     warnings = estimator.get_validation_warnings()
