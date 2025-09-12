@@ -50,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Product multiplier tables in Help tab with research rationale
 - Updated estimation pipeline documentation to include product scaling step
 - Fixed import errors and deprecated Streamlit parameter warnings
+- Replaced confusing Stage Summary toggle with comprehensive Package Summary table
+- Package Summary shows Base N2S, Integrations, Reports, Degree Works, and TOTAL in clean multi-row format
+- Improved visual alignment between Package Summary and Role Summary sections
+- Enhanced data formatting with consistent number precision (hours to 1 decimal, costs as currency)
 
 ### Technical
 
