@@ -45,7 +45,10 @@ class ConfigurationLoader:
             addon_packages=self._load_addon_packages(),
             product_role_map=self._load_product_role_map(),
             role_aliases=self._get_role_aliases_list(),
-            addon_caps=self._load_addon_caps()
+            addon_caps=self._load_addon_caps(),
+            product_delivery_type_multipliers=self._load_product_multipliers(),
+            product_package_multipliers=self._load_product_package_multipliers(),
+            product_notes=self._load_product_notes()
         )
 
     def _load_all_sheets(self) -> None:
@@ -346,3 +349,73 @@ class ConfigurationLoader:
             return caps
         
         return default_caps
+
+    def _load_product_multipliers(self) -> Dict[str, Dict[str, float]]:
+        """Load product delivery type multipliers from workbook."""
+        default_multipliers = {
+            "Banner": {"Net New": 1.00, "Modernization": 0.90},
+            "Colleague": {"Net New": 0.85, "Modernization": 0.75}
+        }
+        
+        if 'Product Multipliers' in self._sheets:
+            multipliers = {}
+            df = self._sheets['Product Multipliers']
+            for _, row in df.iterrows():
+                product = row['Product']
+                delivery_type = row['Delivery Type']
+                multiplier = float(row['Multiplier'])
+                
+                if product not in multipliers:
+                    multipliers[product] = {}
+                multipliers[product][delivery_type] = multiplier
+            
+            return multipliers
+        
+        return default_multipliers
+
+    def _load_product_package_multipliers(self) -> Dict[str, Dict[str, float]]:
+        """Load product package multipliers from workbook."""
+        default_multipliers = {
+            "Banner": {"Integrations": 1.00, "Reports": 1.00, "Degree Works": 1.00},
+            "Colleague": {"Integrations": 0.90, "Reports": 0.90, "Degree Works": 0.00}
+        }
+        
+        if 'Product Package Multipliers' in self._sheets:
+            multipliers = {}
+            df = self._sheets['Product Package Multipliers']
+            for _, row in df.iterrows():
+                product = row['Product']
+                package = row['Package']
+                multiplier = float(row['Multiplier'])
+                
+                if product not in multipliers:
+                    multipliers[product] = {}
+                multipliers[product][package] = multiplier
+            
+            return multipliers
+        
+        return default_multipliers
+
+    def _load_product_notes(self) -> Dict[str, str]:
+        """Load product notes from workbook."""
+        default_notes = {
+            "Banner": "Large, multi-campus Banner deployments are complex & long (e.g., CCCS: 13 colleges, 5 years, $26M)",
+            "Colleague": "Colleague implementations at small-mid sized colleges often complete faster (e.g., SMC modernization: ~9 months)"
+        }
+        
+        if 'Product Package Multipliers' in self._sheets:
+            notes = {}
+            df = self._sheets['Product Package Multipliers']
+            for _, row in df.iterrows():
+                product = row['Product']
+                if 'Notes' in row and pd.notna(row['Notes']):
+                    notes[product] = str(row['Notes'])
+            
+            # Merge with defaults for any missing products
+            for product, note in default_notes.items():
+                if product not in notes:
+                    notes[product] = note
+            
+            return notes
+        
+        return default_notes

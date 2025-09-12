@@ -280,6 +280,29 @@ def validate_estimation_inputs(inputs: 'EstimationInputs') -> list[str]:
     return warnings
 
 
+def validate_product_package_multipliers(inputs: 'EstimationInputs', config: ConfigurationData) -> list[str]:
+    """Validate product package multipliers and warn about disabled packages."""
+    warnings = []
+    
+    # Check if any enabled packages have zero multipliers (effectively disabled)
+    if inputs.include_integrations:
+        pkg_mult = config.product_package_multipliers.get(inputs.product, {}).get('Integrations', 1.0)
+        if pkg_mult == 0.0:
+            warnings.append(f"Integrations package is enabled but has 0.0x multiplier for {inputs.product} - no hours will be calculated")
+    
+    if inputs.include_reports:
+        pkg_mult = config.product_package_multipliers.get(inputs.product, {}).get('Reports', 1.0)
+        if pkg_mult == 0.0:
+            warnings.append(f"Reports package is enabled but has 0.0x multiplier for {inputs.product} - no hours will be calculated")
+    
+    if inputs.include_degreeworks:
+        pkg_mult = config.product_package_multipliers.get(inputs.product, {}).get('Degree Works', 1.0)
+        if pkg_mult == 0.0:
+            warnings.append(f"Degree Works package is enabled but has 0.0x multiplier for {inputs.product} - no hours will be calculated")
+    
+    return warnings
+
+
 def validate_pricing_overrides(rate_overrides: list[dict], global_mix_override: dict, role_mix_overrides: list[dict]) -> list[str]:
     """Validate pricing overrides for rates and delivery mixes."""
     warnings = []

@@ -236,3 +236,15 @@ class ConfigurationData(BaseModel):
             "Very Large": 600.0
         }
     })
+    product_delivery_type_multipliers: Dict[str, Dict[str, float]] = Field(default={
+        "Banner": {"Net New": 1.00, "Modernization": 0.90},
+        "Colleague": {"Net New": 0.85, "Modernization": 0.75}
+    })
+    product_package_multipliers: Dict[str, Dict[str, float]] = Field(default={
+        "Banner": {"Integrations": 1.00, "Reports": 1.00, "Degree Works": 1.00},
+        "Colleague": {"Integrations": 0.90, "Reports": 0.90, "Degree Works": 0.00}
+    })
+    product_notes: Dict[str, str] = Field(default={
+        "Banner": "Large, multi-campus Banner deployments are complex & long (e.g., CCCS: 13 colleges, 5 years, $26M)",
+        "Colleague": "Colleague implementations at small-mid sized colleges often complete faster (e.g., SMC modernization: ~9 months)"
+    })

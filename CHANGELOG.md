@@ -5,6 +5,78 @@ All notable changes to the N2S Delivery Estimator project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2024-12-19
+
+### Added
+
+**Colleague vs Banner Product Differentiation**
+- Product-specific delivery type multipliers (Banner: 1.0x Net New, 0.9x Modernization; Colleague: 0.85x Net New, 0.75x Modernization)
+- Product-specific package multipliers for add-ons (Banner: 1.0x all; Colleague: 0.9x Integrations/Reports, 0.0x Degree Works)
+- Research-backed scaling based on real-world implementation patterns (SMC Colleague modernization: 9 months vs CCCS Banner: 5 years, $26M)
+- Product Role Map enhancements to disable Technical Architect and Integration Lead for Colleague
+- Comprehensive product multiplier documentation in Help tab with research citations
+
+**Enhanced Stage Summary Capabilities**
+- Stage Summary toggle: Switch between base-only and all-packages view
+- All-packages view includes Integrations, Reports, and Degree Works in stage breakdown
+- Preserves existing base-only view for backward compatibility
+
+**Sprint 0 Uplift Configuration**
+- Configurable Sprint 0 uplift percentage (defaults: Net New +2%, Modernization +1%)
+- Proportional reduction from Plan and Configure stages to maintain 100% stage weight total
+- Advanced Settings slider for fine-tuning Sprint 0 allocation
+
+**Degree Works Cap Management**
+- Size-based caps for Degree Works total hours (Small: 300h, Medium: 400h, Large: 500h, Very Large: 600h)
+- PVE clamping logic to prevent runaway estimates while preserving Setup hours
+- UI controls for enabling/disabling caps and overriding cap values
+- Clear warnings when Setup hours approach or exceed cap limits
+
+### Changed
+
+**Product-Specific Role Filtering**
+- Technical Architect completely disabled for Colleague (hours removed, not redistributed)
+- Integration Lead disabled for Colleague to reflect typical implementation patterns
+- DegreeWorks Scribe Banner-only enforcement through product package multipliers
+- Preserved methodology integrity by removing disabled role hours rather than redistributing
+
+**Enhanced Configuration Management**
+- New Product Multipliers and Product Package Multipliers workbook sheets
+- Automatic fallback to code defaults when workbook sheets are missing
+- Enhanced validation with warnings for disabled packages
+
+**UI/UX Improvements**
+- Applied Multipliers section in Assumptions tab showing active product scaling
+- Product multiplier tables in Help tab with research rationale
+- Updated estimation pipeline documentation to include product scaling step
+- Fixed import errors and deprecated Streamlit parameter warnings
+
+### Technical
+
+**Data Model Enhancements**
+- Extended ConfigurationData with product_delivery_type_multipliers and product_package_multipliers
+- Added product_notes field for research citations and rationale
+- Enhanced EstimationInputs with Sprint 0 uplift and Degree Works cap controls
+
+**Engine Improvements**
+- Product scaling applied in base estimation before stage allocation
+- Add-on calculations now apply product package multipliers after role filtering
+- Enhanced validation with product-specific package multiplier warnings
+- Maintained deterministic methodology while adding product differentiation
+
+**Workbook Structure**
+- Added Product Multipliers sheet with Product, Delivery Type, Multiplier columns
+- Added Product Package Multipliers sheet with Product, Package, Multiplier, Notes columns
+- Updated Product Role Map to reflect Colleague-specific role availability
+- Regenerated n2s_estimator.xlsx with all new configuration data
+
+### Fixed
+
+- Fixed relative import error in render_assumptions_tab function
+- Resolved Streamlit deprecation warnings for use_container_width parameter
+- Corrected role mix percentages to sum to 1.0 (Deploy stage)
+- Fixed Technical Lead canonicalization conflicts in Product Role Map
+
 ## [0.10.0] - 2024-12-19
 
 ### Added

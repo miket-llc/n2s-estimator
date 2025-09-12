@@ -301,6 +301,30 @@ def create_workbook() -> None:
         })
         assumptions_data.to_excel(writer, sheet_name='Assumptions & Inputs', index=False)
 
+        # Product Multipliers sheet
+        product_multipliers_data = pd.DataFrame({
+            'Product': ['Banner', 'Banner', 'Colleague', 'Colleague'],
+            'Delivery Type': ['Net New', 'Modernization', 'Net New', 'Modernization'],
+            'Multiplier': [1.00, 0.90, 0.85, 0.75]
+        })
+        product_multipliers_data.to_excel(writer, sheet_name='Product Multipliers', index=False)
+
+        # Product Package Multipliers sheet
+        product_package_multipliers_data = pd.DataFrame({
+            'Product': ['Banner', 'Banner', 'Banner', 'Colleague', 'Colleague', 'Colleague'],
+            'Package': ['Integrations', 'Reports', 'Degree Works', 'Integrations', 'Reports', 'Degree Works'],
+            'Multiplier': [1.00, 1.00, 1.00, 0.90, 0.90, 0.00],
+            'Notes': [
+                'Banner integrations typically complex enterprise patterns',
+                'Banner reporting often includes complex data warehouse integration',
+                'Degree Works is Banner-only ecosystem',
+                'Colleague integrations leverage shared Ethos patterns',
+                'Colleague reporting typically simpler institutional scope',
+                'Degree Works not available for Colleague'
+            ]
+        })
+        product_package_multipliers_data.to_excel(writer, sheet_name='Product Package Multipliers', index=False)
+
         # Sources sheet
         sources_data = pd.DataFrame({
             'Source': ['N2S_Estimator_v1.xlsx (referenced)', 'fy25q3-ps-efficiency-model-02.xlsx (referenced)'],

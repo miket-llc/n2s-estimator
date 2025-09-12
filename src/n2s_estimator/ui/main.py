@@ -922,15 +922,16 @@ def render_help_tab() -> None:
     
     1. **Start from Base N2S baseline** (6,700h)
     2. **Apply Size & Delivery Type multipliers** (Small 0.85x, Medium 1.0x, Large 1.25x, Very Large 1.5x; Modernization 0.9x, Net New 1.0x)
-    3. **Apply Sprint 0 uplift** (configurable % of total added to Sprint 0, subtracted from Plan+Configure)
-    4. **Allocate to stages** via adjusted Stage Weights (Start 2.5%, Prepare 2.5%, Plan 10%, Configure 34%, Test 20%, Deploy 10%, etc.)
-    5. **Split presales vs delivery** by Activities/Stages (Start 60% presales, Prepare 30% presales, others 0%)
-    6. **Expand delivery hours to roles** by per-stage Role Mix (Configure heavily weighted to technical roles)
-    7. **Apply Onshore/Offshore/Partner split** (global 70/20/10 or per-role overrides)
-    8. **Price via rate cards** (selected Locale affects rates, not hours)
-    9. **Add-ons** (Integrations, Reports, Degree Works) computed similarly
-    10. **Subtotals by package** (Base N2S + enabled add-ons)
-    11. **Export** a styled Excel workbook with all breakdowns
+    3. **Apply Product scaler** (Banner: 1.0x Net New, 0.9x Modernization; Colleague: 0.85x Net New, 0.75x Modernization)
+    4. **Apply Sprint 0 uplift** (configurable % of total added to Sprint 0, subtracted from Plan+Configure)
+    5. **Allocate to stages** via adjusted Stage Weights (Start 2.5%, Prepare 2.5%, Plan 10%, Configure 34%, Test 20%, Deploy 10%, etc.)
+    6. **Split presales vs delivery** by Activities/Stages (Start 60% presales, Prepare 30% presales, others 0%)
+    7. **Expand delivery hours to roles** by per-stage Role Mix (Configure heavily weighted to technical roles)
+    8. **Apply Onshore/Offshore/Partner split** (global 70/20/10 or per-role overrides)
+    9. **Price via rate cards** (selected Locale affects rates, not hours)
+    10. **Add-ons** (Integrations, Reports, Degree Works) computed similarly with product package multipliers
+    11. **Subtotals by package** (Base N2S + enabled add-ons)
+    12. **Export** a styled Excel workbook with all breakdowns
     """)
     
     # Degree Works Setup explanation
@@ -978,6 +979,37 @@ def render_help_tab() -> None:
     - Cap can be overridden in Advanced Settings
     """)
     
+    # Product multipliers explanation
+    st.markdown("### 🏢 Product Multipliers")
+    st.info("""
+    **Why Colleague estimates are lower by default:**
+    
+    Colleague implementations and modernizations at small–mid sized colleges often complete faster than large Banner programs 
+    (e.g., SMC's Colleague SaaS modernization in ~9 months), while multi‑campus Banner ERP programs can span years with higher complexity. 
+    Our estimator reflects that by applying product‑specific multipliers and by disabling Technical Architect for Colleague.
+    
+    **Sources:** SMC modernization (9 months); CCCS Banner program (5 years, $26M).
+    """)
+    
+    # Product multiplier tables
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### Product × Delivery Type Multipliers")
+        st.dataframe({
+            'Product': ['Banner', 'Banner', 'Colleague', 'Colleague'],
+            'Delivery Type': ['Net New', 'Modernization', 'Net New', 'Modernization'],
+            'Multiplier': ['1.00x', '0.90x', '0.85x', '0.75x']
+        }, use_container_width=True)
+    
+    with col2:
+        st.markdown("#### Product × Package Multipliers")
+        st.dataframe({
+            'Product': ['Banner', 'Banner', 'Banner', 'Colleague', 'Colleague', 'Colleague'],
+            'Package': ['Integrations', 'Reports', 'Degree Works', 'Integrations', 'Reports', 'Degree Works'],
+            'Multiplier': ['1.00x', '1.00x', '1.00x', '0.90x', '0.90x', '0.00x']
+        }, use_container_width=True)
+    
     # Important notes
     st.markdown("### ⚠️ Notes & Guardrails")
     st.warning("""
@@ -1024,6 +1056,37 @@ def render_assumptions_tab(results: 'EstimationResults') -> None:
         st.write(f"**Size Band:** {inputs.size_band}")
         st.write(f"**Locale:** {inputs.locale}")
         st.write(f"**Maturity Factor:** {inputs.maturity_factor:.2f}")
+        
+        st.markdown("#### Applied Multipliers")
+        # Get the estimator to access config
+        from src.n2s_estimator.engine.orchestrator import N2SEstimator
+        from pathlib import Path
+        estimator = N2SEstimator(Path('src/n2s_estimator/data/n2s_estimator.xlsx'))
+        
+        # Product delivery type multiplier
+        product_mult = (
+            estimator.config.product_delivery_type_multipliers
+                .get(inputs.product, {})
+                .get(inputs.delivery_type, 1.0)
+        )
+        st.write(f"**Product × Delivery Type:** {product_mult:.2f}x")
+        
+        # Size multiplier
+        size_mult = estimator.config.size_multipliers.get(inputs.size_band, 1.0)
+        st.write(f"**Size Band:** {size_mult:.2f}x")
+        
+        # Package multipliers for enabled add-ons
+        if inputs.include_integrations or inputs.include_reports or inputs.include_degreeworks:
+            st.write("**Package Multipliers:**")
+            if inputs.include_integrations:
+                pkg_mult = estimator.config.product_package_multipliers.get(inputs.product, {}).get('Integrations', 1.0)
+                st.write(f"  - Integrations: {pkg_mult:.2f}x")
+            if inputs.include_reports:
+                pkg_mult = estimator.config.product_package_multipliers.get(inputs.product, {}).get('Reports', 1.0)
+                st.write(f"  - Reports: {pkg_mult:.2f}x")
+            if inputs.include_degreeworks:
+                pkg_mult = estimator.config.product_package_multipliers.get(inputs.product, {}).get('Degree Works', 1.0)
+                st.write(f"  - Degree Works: {pkg_mult:.2f}x")
 
     with col2:
         st.markdown("#### Add-on Packages")

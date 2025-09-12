@@ -17,14 +17,24 @@ class EstimationEngine:
         2. Allocate to stages via stage weights
         3. Split each stage into presales vs delivery hours
         """
-        # Step 1: Calculate adjusted base hours
+        # Step 1: Calculate adjusted base hours with product-specific multipliers
         size_multiplier = self.config.size_multipliers.get(inputs.size_band, 1.0)
-        delivery_multiplier = self.config.delivery_type_multipliers.get(inputs.delivery_type, 1.0)
+        
+        # Get product-specific delivery type multiplier, fall back to global
+        product_mult = (
+            self.config.product_delivery_type_multipliers
+                .get(inputs.product, {})
+                .get(inputs.delivery_type)
+        )
+        effective_delivery_mult = (
+            product_mult if product_mult is not None
+            else self.config.delivery_type_multipliers.get(inputs.delivery_type, 1.0)
+        )
 
         adjusted_base = (
             self.config.baseline_hours *
             size_multiplier *
-            delivery_multiplier *
+            effective_delivery_mult *
             inputs.maturity_factor
         )
 

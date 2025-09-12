@@ -72,6 +72,17 @@ class AddOnEngine:
                 
             tier_hours[tier.name] = hours
 
+        # Apply product package multiplier
+        pkg_mult = (
+            self.config.product_package_multipliers
+                .get(inputs.product, {})
+                .get(package_name, 1.0)
+        )
+        
+        # Scale all tier hours by product package multiplier
+        for tier_name in tier_hours:
+            tier_hours[tier_name] *= pkg_mult
+
         # Distribute hours to roles
         role_hours_dict = {}
         for tier in package.tiers:
@@ -210,6 +221,23 @@ class AddOnEngine:
                         else:
                             pve_hours_dict[role] = role_hours
 
+        # Apply product package multiplier to all hours
+        pkg_mult = (
+            self.config.product_package_multipliers
+                .get(inputs.product, {})
+                .get('Degree Works', 1.0)
+        )
+        
+        # Scale setup hours
+        for role in setup_hours_dict:
+            setup_hours_dict[role] *= pkg_mult
+        if 'Degree Works – Setup' in stage_hours_dict:
+            stage_hours_dict['Degree Works – Setup'] *= pkg_mult
+        
+        # Scale PVE hours
+        for role in pve_hours_dict:
+            pve_hours_dict[role] *= pkg_mult
+        
         # Calculate total PVE hours
         total_pve_hours = sum(pve_hours_dict.values())
         if total_pve_hours > 0:

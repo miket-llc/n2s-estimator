@@ -1,4 +1,4 @@
 """N2S Delivery Estimator - Streamlit application for project estimation."""
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
