@@ -26,7 +26,7 @@ from n2s_estimator.export.excel import ExcelExporter
 # Page configuration
 st.set_page_config(
     page_title="N2S Delivery Estimator",
-    page_icon="📊",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -1011,7 +1011,7 @@ def render_help_tab() -> None:
     """)
 
     # Degree Works PVEs explanation
-    st.markdown("### 📚 Degree Works PVEs (Program-Version Equivalents)")
+    st.markdown("###  Degree Works PVEs (Program-Version Equivalents)")
     st.info("""
     **PVEs approximate** how many requirement blocks must be scribed at go-live:
 
@@ -1075,7 +1075,7 @@ def render_help_tab() -> None:
         }, width='stretch')
 
     # Important notes
-    st.markdown("### ⚠️ Notes & Guardrails")
+    st.markdown("###  Notes & Guardrails")
     st.warning("""
     **Key Rules:**
     - **Only Setup is size-scaled** (300h → 375h for Large schools)
@@ -1227,7 +1227,7 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
     )
 
     if pricing_warnings:
-        with st.expander("⚠️ Pricing Override Warnings", expanded=True):
+        with st.expander(" Pricing Override Warnings", expanded=True):
             for warning in pricing_warnings:
                 st.warning(warning)
 
@@ -1410,7 +1410,7 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
 
 def render_user_guide_tab() -> None:
     """Render User Guide tab with comprehensive documentation."""
-    st.subheader("📚 User Guide")
+    st.subheader("User Guide")
     
     # Load and display the user guide content
     try:
@@ -1530,7 +1530,7 @@ def main() -> None:
     # Display validation warnings
     warnings = estimator.get_validation_warnings()
     if warnings:
-        with st.expander("⚠️ Configuration Warnings", expanded=False):
+        with st.expander(" Configuration Warnings", expanded=False):
             for warning in warnings:
                 st.warning(warning)
 
@@ -1575,7 +1575,7 @@ def main() -> None:
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col2:
-        if st.button("📁 Export to Excel", type="primary", width="stretch"):
+        if st.button(" Export to Excel", type="primary", width="stretch"):
             try:
                 exporter = ExcelExporter()
                 excel_data = exporter.export_to_excel(results, estimator)
