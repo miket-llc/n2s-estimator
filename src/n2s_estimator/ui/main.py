@@ -552,7 +552,7 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
             }
         )
 
-    # Comprehensive Package Summary - Single Row
+    # Comprehensive Package Summary
     st.markdown("#### Package Summary")
     
     # Calculate totals
@@ -571,36 +571,25 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
     total_hours = base_hours + integrations_hours + reports_hours + degreeworks_hours
     total_cost = base_cost + integrations_cost + reports_cost + degreeworks_cost
     
-    # Create single-row summary
-    summary_data = {
-        'Base Hours': round(base_hours, 1),
-        'Base Cost': round(base_cost, 0),
-        'Integrations Hours': round(integrations_hours, 1),
-        'Integrations Cost': round(integrations_cost, 0),
-        'Reports Hours': round(reports_hours, 1),
-        'Reports Cost': round(reports_cost, 0),
-        'DW Hours': round(degreeworks_hours, 1),
-        'DW Cost': round(degreeworks_cost, 0),
-        'Total Hours': round(total_hours, 1),
-        'Total Cost': round(total_cost, 0)
-    }
+    # Create summary data
+    summary_data = [
+        {'Package': 'Base N2S', 'Hours': base_hours, 'Cost': base_cost},
+        {'Package': 'Integrations', 'Hours': integrations_hours, 'Cost': integrations_cost},
+        {'Package': 'Reports', 'Hours': reports_hours, 'Cost': reports_cost},
+        {'Package': 'Degree Works', 'Hours': degreeworks_hours, 'Cost': degreeworks_cost},
+        {'Package': '**TOTAL**', 'Hours': total_hours, 'Cost': total_cost}
+    ]
     
-    summary_df = pd.DataFrame([summary_data])
+    summary_df = pd.DataFrame(summary_data)
+    summary_df['Hours'] = summary_df['Hours'].round(1)
+    summary_df['Cost'] = summary_df['Cost'].round(0)
     
     st.dataframe(
         summary_df,
         width="stretch",
         column_config={
-            'Base Hours': st.column_config.NumberColumn(format="%.1f"),
-            'Base Cost': st.column_config.NumberColumn(format="$%d"),
-            'Integrations Hours': st.column_config.NumberColumn(format="%.1f"),
-            'Integrations Cost': st.column_config.NumberColumn(format="$%d"),
-            'Reports Hours': st.column_config.NumberColumn(format="%.1f"),
-            'Reports Cost': st.column_config.NumberColumn(format="$%d"),
-            'DW Hours': st.column_config.NumberColumn(format="%.1f"),
-            'DW Cost': st.column_config.NumberColumn(format="$%d"),
-            'Total Hours': st.column_config.NumberColumn(format="%.1f"),
-            'Total Cost': st.column_config.NumberColumn(format="$%d")
+            'Hours': st.column_config.NumberColumn(format="%.1f"),
+            'Cost': st.column_config.NumberColumn(format="$%d")
         }
     )
     
