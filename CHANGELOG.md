@@ -102,7 +102,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced ambiguous Unicode characters with ASCII equivalents
 - Enhanced type annotations and function signatures
 
-#### UI/UX Enhancements
+#### UI/UX Enhancements (v0.12.0)
+
 - Improved line length compliance and code formatting
 - Better error messages and user feedback
 - Enhanced scenario management UI with success/error indicators
@@ -164,7 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DegreeWorks Scribe Banner-only enforcement through product package multipliers
 - Preserved methodology integrity by removing disabled role hours rather than redistributing
 
-#### Enhanced Configuration Management
+#### Enhanced Configuration Management (v0.11.0)
 
 - New Product Multipliers and Product Package Multipliers workbook sheets
 - Automatic fallback to code defaults when workbook sheets are missing
@@ -183,20 +184,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical
 
-#### Data Model Enhancements
+#### Data Model Enhancements (v0.11.0)
 
 - Extended ConfigurationData with product_delivery_type_multipliers and product_package_multipliers
 - Added product_notes field for research citations and rationale
 - Enhanced EstimationInputs with Sprint 0 uplift and Degree Works cap controls
 
-#### Engine Improvements
+#### Engine Improvements (v0.11.0)
 
 - Product scaling applied in base estimation before stage allocation
 - Add-on calculations now apply product package multipliers after role filtering
 - Enhanced validation with product-specific package multiplier warnings
 - Maintained deterministic methodology while adding product differentiation
 
-#### Workbook Structure
+#### Workbook Structure (v0.11.0)
 
 - Added Product Multipliers sheet with Product, Delivery Type, Multiplier columns
 - Added Product Package Multipliers sheet with Product, Package, Multiplier, Notes columns
@@ -234,7 +235,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-#### UI Improvements
+#### UI Improvements (v0.11.0)
 
 - Removed unsupported help parameter from data_editor components
 - Improved compatibility and stability of data editing interfaces
@@ -338,18 +339,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Expected Results (Default Scenario)
 
-#### Base N2S Package (Banner, Net New, Medium, US):
+#### Base N2S Package (Banner, Net New, Medium, US)
+
 - Total Hours: 6,700
 - Presales Hours: 150.75 (Start: 100.5, Prepare: 50.25)
 - Delivery Hours: 6,549.25
 
-#### Stage Breakdown:
+#### Stage Breakdown
 
 - Start: 167.5h, Prepare: 167.5h, Sprint 0: 402h
 - Plan: 670h, Configure: 2,278h, Test: 1,340h
 - Deploy: 670h, Go-Live: 402h, Post Go-Live: 603h
 
-#### Add-ons (with defaults):
+#### Add-ons (with defaults)
 
 - Integrations (30 items, 60/30/10 mix): ~3,840 hours
 - Reports (40 items, 50/35/15 mix): ~2,448 hours
@@ -396,4 +398,3 @@ This initial release represents a complete rewrite and modernization of the N2S 
 - Extensive documentation and quality gates
 
 The codebase is production-ready with full test coverage, quality assurance certification, and comprehensive documentation for maintenance and enhancement.
-
