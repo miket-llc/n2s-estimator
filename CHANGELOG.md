@@ -5,6 +5,52 @@ All notable changes to the N2S Delivery Estimator project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.2] - 2024-12-19
+
+### Added
+
+**Comprehensive Excel Export Enhancement**
+- Complete parity with Streamlit UI in Excel export functionality
+- Executive Summary sheet with KPIs, delivery split, and project configuration
+- Package Summary sheet with comprehensive breakdown and percentages
+- Degree Works sheet with configuration summary and PVE complexity breakdown
+- Charts & Analysis sheet with data tables for visualization and stage×role matrix
+- Scenario Inputs sheet with complete parameter documentation for reproducibility
+- Professional conditional formatting with data bars for visual impact
+- Board-ready formatting for executive presentations
+
+**Enhanced Export Features**
+- Proper currency, percentage, and number formatting throughout
+- Auto-fit columns and frozen panes for better navigation
+- Comprehensive metadata and version tracking
+- Complete scenario management documentation
+- All 20+ Degree Works parameters fully documented
+- Stage × Role cost matrix for detailed analysis
+
+### Changed
+
+**Excel Export Architecture**
+- Restructured export to create 9 comprehensive sheets instead of 6 basic sheets
+- Enhanced existing sheets with better formatting and conditional styling
+- Improved data organization matching Streamlit UI structure
+- Professional presentation formatting for board-level deliverables
+
+## [0.12.1] - 2024-12-19
+
+### Added
+
+**Version Display Enhancement**
+- Version display in sidebar caption and main page header
+- Package-level version metadata for programmatic access
+- Clear version identification throughout the application
+
+### Changed
+
+**Tab Organization**
+- Reverted to standard tabs with shorter, more concise names
+- Improved space efficiency for better narrow screen compatibility
+- Changed "How this estimate is built" to "Estimate Details"
+
 ## [0.12.0] - 2024-12-19
 
 ### Added

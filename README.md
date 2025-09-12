@@ -7,7 +7,7 @@ A professional Streamlit application for estimating N2S (Banner/Colleague) deliv
 ![Coverage](https://img.shields.io/badge/coverage-70%25-yellowgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Streamlit](https://img.shields.io/badge/streamlit-1.49%2B-red)
-![Version](https://img.shields.io/badge/version-0.10.0-blue)
+![Version](https://img.shields.io/badge/version-0.12.2-blue)
 
 **🌐 Live Application**: Currently running at `http://localhost:8501` (when started locally)
 
@@ -22,7 +22,7 @@ The N2S Delivery Estimator provides:
 - **Degree Works Cap**: Size-based guardrails to prevent runaway estimates (Small 300h, Medium 400h, Large 500h, Very Large 600h)
 - **Multi-locale Support**: Rate cards for US, Canada, UK, EU, ANZ, and MENA
 - **Delivery Split Options**: Onshore/Offshore/Partner mix configurations
-- **Excel Export**: Board-ready reports with styling and conditional formatting
+- **Comprehensive Excel Export**: Professional 9-sheet workbook with executive summary, package breakdowns, scenario documentation, and board-ready formatting
 
 ## Quick Start
 
@@ -125,13 +125,25 @@ The application uses `src/n2s_estimator/data/n2s_estimator.xlsx` for all configu
 
 ### Excel Export
 
-Generated reports include:
-- Summary with KPIs and charts
-- Stage × Role breakdowns
-- Add-on package details
-- Rates and delivery mixes
-- Assumptions and inputs
-- Data sources and metadata
+**Comprehensive 9-Sheet Workbook:**
+- **Executive Summary**: KPIs, delivery split, project configuration
+- **Package Summary**: Complete breakdown with percentages and totals
+- **Base N2S**: Detailed stage × role analysis with conditional formatting
+- **Integrations**: Tier breakdown and role analysis
+- **Reports**: Tier breakdown and role analysis
+- **Degree Works**: Configuration summary and PVE complexity breakdown
+- **Charts & Analysis**: Data tables for visualization and stage×role matrix
+- **Rates & Mixes**: Effective rates and delivery mix documentation
+- **Scenario Inputs**: Complete parameter documentation for reproducibility
+- **Assumptions**: Comprehensive inputs and multiplier documentation
+- **Sources**: Metadata and data source documentation
+
+**Professional Features:**
+- Board-ready formatting with conditional formatting and data bars
+- Proper currency, percentage, and number formatting
+- Auto-fit columns and frozen panes for navigation
+- Complete scenario management documentation
+- Version tracking and generation timestamps
 
 ### Validation
 
