@@ -556,23 +556,10 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
 
     with col1:
         # Stage summary
-        include_addons = st.checkbox(
-            "Include add-ons in Stage Summary", 
-            value=True, 
-            help="When enabled, Stage Summary includes Integrations, Reports, and Degree Works."
-        )
-        
         st.markdown("#### Stage Summary")
-        if include_addons:
-            st.caption("All packages (Base N2S + Add-ons)")
-        else:
-            st.caption("Base N2S only")
-            
-        stage_summary = (
-            estimator.get_stage_summary_all_packages(results)
-            if include_addons else
-            estimator.get_stage_summary(results)  # base-only
-        )
+        st.caption("Base N2S stages only")
+        
+        stage_summary = estimator.get_stage_summary(results)  # base-only
         if stage_summary:
             stage_df = pd.DataFrame([{
                 'Stage': rh.stage,
@@ -590,6 +577,16 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
                     'Cost': st.column_config.NumberColumn(format="$%d")
                 }
             )
+        
+        # Add-ons toggle below Stage Summary
+        include_addons = st.checkbox(
+            "Include add-ons in Stage Summary", 
+            value=True, 
+            help="When enabled, Stage Summary includes Integrations, Reports, and Degree Works."
+        )
+        
+        if include_addons:
+            st.info("💡 Switch to 'All Packages' view in Stage Summary to see add-ons included")
 
     with col2:
         # Role summary
