@@ -5,6 +5,67 @@ All notable changes to the N2S Delivery Estimator project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2024-12-19
+
+### Added
+
+**Comprehensive Scenario Management Enhancement**
+- Complete scenario save/load functionality with all Degree Works parameters
+- Enhanced scenario data structure including all 20+ Degree Works configuration options
+- Robust backward compatibility with graceful handling of missing fields
+- Comprehensive scenario management test suite (10 tests, 100% passing)
+- Real-time inputs change detection for all Degree Works parameters
+
+**Advanced Rates & Pricing Management**
+- Complete rate override functionality with per-role and per-locale customization
+- Global delivery mix overrides (onshore/offshore/partner percentages)
+- Per-role delivery mix customization with validation
+- Runtime pricing controls with apply/reset functionality
+- Enhanced Rates & Mixes tab with editable rate tables
+
+**Quality Assurance & Testing**
+- Comprehensive scenario management test suite covering all functionality
+- Rate override validation and application testing
+- Delivery mix validation ensuring percentages sum to 1.0
+- Cost impact verification (rates affect costs, not hours)
+- Backward compatibility testing for minimal scenario data
+- Complete workflow testing from save to load to estimation
+
+### Changed
+
+**Scenario Management Architecture**
+- Enhanced scenario data structure with complete parameter coverage
+- Improved error handling and user feedback for scenario operations
+- Updated inputs change detection to include all Degree Works parameters
+- Streamlined scenario loading with graceful field handling
+
+**Code Quality Improvements**
+- Comprehensive linting cleanup (345→264 Ruff errors resolved)
+- Migrated Pydantic validators from V1 to V2 syntax
+- Fixed Streamlit deprecation warnings (use_container_width → width='stretch')
+- Replaced ambiguous Unicode characters with ASCII equivalents
+- Enhanced type annotations and function signatures
+
+**UI/UX Enhancements**
+- Improved line length compliance and code formatting
+- Better error messages and user feedback
+- Enhanced scenario management UI with success/error indicators
+- Consistent character encoding throughout codebase
+
+### Fixed
+
+**Scenario Management Issues**
+- Fixed scenario loading with missing Degree Works parameters
+- Resolved backward compatibility issues with minimal scenario data
+- Corrected stage name references (en dashes vs hyphens)
+- Enhanced validation for integration and reports tier mix percentages
+
+**Code Quality Issues**
+- Resolved 81 Ruff linting errors through systematic cleanup
+- Fixed Pydantic V2 compatibility issues
+- Corrected Streamlit deprecation warnings
+- Improved code readability and maintainability
+
 ## [0.11.0] - 2024-12-19
 
 ### Added
