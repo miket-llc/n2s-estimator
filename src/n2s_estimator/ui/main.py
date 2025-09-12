@@ -1537,38 +1537,77 @@ def main() -> None:
     # Summary cards
     render_summary_cards(estimator, results)
 
-    # Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
-        "Base N2S", "Integrations", "Reports", "Degree Works", "Charts",
-        "How this estimate is built", "Assumptions", "Rates & Mixes", "User Guide"
-    ])
-
-    with tab1:
-        render_base_n2s_tab(estimator, results)
-
-    with tab2:
-        render_integrations_tab(estimator, results)
-
-    with tab3:
-        render_reports_tab(estimator, results)
-
-    with tab4:
-        render_degreeworks_tab(estimator, results, inputs)
-
-    with tab5:
-        render_charts_tab(estimator, results)
-
-    with tab6:
-        render_help_tab()
-
-    with tab7:
-        render_assumptions_tab(results, estimator)
-
-    with tab8:
-        render_rates_tab(estimator)
-
-    with tab9:
-        render_user_guide_tab()
+    # Organized tab structure with better responsive behavior
+    st.markdown("---")
+    
+    # Create a tab selector using radio buttons for better mobile experience
+    tab_options = [
+        "Results Overview", "Add-On Packages", "Analysis & Charts", 
+        "Configuration", "Documentation"
+    ]
+    
+    selected_tab = st.radio(
+        "Select Section:",
+        tab_options,
+        horizontal=True,
+        key="main_tab_selector"
+    )
+    
+    st.markdown("---")
+    
+    # Render content based on selected tab
+    if selected_tab == "Results Overview":
+        # Results tabs
+        results_tab1, results_tab2 = st.tabs(["Base N2S", "Detailed Breakdown"])
+        
+        with results_tab1:
+            render_base_n2s_tab(estimator, results)
+        
+        with results_tab2:
+            render_assumptions_tab(results, estimator)
+    
+    elif selected_tab == "Add-On Packages":
+        # Add-on tabs
+        addon_tab1, addon_tab2, addon_tab3 = st.tabs(["Integrations", "Reports", "Degree Works"])
+        
+        with addon_tab1:
+            render_integrations_tab(estimator, results)
+        
+        with addon_tab2:
+            render_reports_tab(estimator, results)
+        
+        with addon_tab3:
+            render_degreeworks_tab(estimator, results, inputs)
+    
+    elif selected_tab == "Analysis & Charts":
+        # Analysis tabs
+        analysis_tab1, analysis_tab2 = st.tabs(["Charts", "How This Estimate is Built"])
+        
+        with analysis_tab1:
+            render_charts_tab(estimator, results)
+        
+        with analysis_tab2:
+            render_help_tab()
+    
+    elif selected_tab == "Configuration":
+        # Configuration tabs
+        config_tab1, config_tab2 = st.tabs(["Rates & Mixes", "Advanced Settings"])
+        
+        with config_tab1:
+            render_rates_tab(estimator)
+        
+        with config_tab2:
+            render_assumptions_tab(results, estimator)
+    
+    elif selected_tab == "Documentation":
+        # Documentation tabs
+        doc_tab1, doc_tab2 = st.tabs(["User Guide", "Help & Support"])
+        
+        with doc_tab1:
+            render_user_guide_tab()
+        
+        with doc_tab2:
+            render_help_tab()
 
     # Excel export
     st.markdown("---")
