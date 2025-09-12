@@ -343,6 +343,21 @@ def render_sidebar() -> EstimationInputs:
                 'reports_simple_pct': reports_simple_pct,
                 'reports_standard_pct': reports_standard_pct,
                 'reports_complex_pct': reports_complex_pct,
+                'include_degreeworks': include_degreeworks,
+                'degreeworks_include_setup': degreeworks_include_setup,
+                'degreeworks_use_pve_calculator': degreeworks_use_pve_calculator,
+                'degreeworks_majors': degreeworks_majors,
+                'degreeworks_minors': degreeworks_minors,
+                'degreeworks_certificates': degreeworks_certificates,
+                'degreeworks_concentrations': degreeworks_concentrations,
+                'degreeworks_catalog_years': degreeworks_catalog_years,
+                'degreeworks_pve_count': degreeworks_pve_count,
+                'degreeworks_simple_pct': dw_simple,
+                'degreeworks_standard_pct': dw_standard,
+                'degreeworks_complex_pct': dw_complex,
+                'degreeworks_cap_enabled': degreeworks_cap_enabled,
+                'degreeworks_cap_hours': degreeworks_cap_hours,
+                'sprint0_uplift_pct': sprint0_uplift_pct,
                 'maturity_factor': maturity_factor,
                 'scenario_overrides': {
                     'rate_overrides': st.session_state.rate_overrides,
@@ -366,7 +381,42 @@ def render_sidebar() -> EstimationInputs:
         if uploaded_file:
             try:
                 scenario_data = json.loads(uploaded_file.read())
-                st.session_state.inputs = EstimationInputs(**scenario_data)
+
+                # Create EstimationInputs from scenario data, handling missing fields gracefully
+                inputs_data = {
+                    'product': scenario_data.get('product', 'Banner'),
+                    'delivery_type': scenario_data.get('delivery_type', 'Modernization'),
+                    'size_band': scenario_data.get('size_band', 'Medium'),
+                    'locale': scenario_data.get('locale', 'US'),
+                    'maturity_factor': scenario_data.get('maturity_factor', 1.0),
+                    'integrations_count': scenario_data.get('integrations_count', 0),
+                    'integrations_simple_pct': scenario_data.get('integrations_simple_pct', 0.0),
+                    'integrations_standard_pct': scenario_data.get('integrations_standard_pct', 0.0),
+                    'integrations_complex_pct': scenario_data.get('integrations_complex_pct', 0.0),
+                    'reports_count': scenario_data.get('reports_count', 0),
+                    'reports_simple_pct': scenario_data.get('reports_simple_pct', 0.0),
+                    'reports_standard_pct': scenario_data.get('reports_standard_pct', 0.0),
+                    'reports_complex_pct': scenario_data.get('reports_complex_pct', 0.0),
+                    'include_integrations': scenario_data.get('include_integrations', False),
+                    'include_reports': scenario_data.get('include_reports', False),
+                    'include_degreeworks': scenario_data.get('include_degreeworks', False),
+                    'degreeworks_include_setup': scenario_data.get('degreeworks_include_setup', True),
+                    'degreeworks_use_pve_calculator': scenario_data.get('degreeworks_use_pve_calculator', True),
+                    'degreeworks_majors': scenario_data.get('degreeworks_majors', 0),
+                    'degreeworks_minors': scenario_data.get('degreeworks_minors', 0),
+                    'degreeworks_certificates': scenario_data.get('degreeworks_certificates', 0),
+                    'degreeworks_concentrations': scenario_data.get('degreeworks_concentrations', 0),
+                    'degreeworks_catalog_years': scenario_data.get('degreeworks_catalog_years', 1),
+                    'degreeworks_pve_count': scenario_data.get('degreeworks_pve_count', 0),
+                    'degreeworks_simple_pct': scenario_data.get('degreeworks_simple_pct', 0.50),
+                    'degreeworks_standard_pct': scenario_data.get('degreeworks_standard_pct', 0.35),
+                    'degreeworks_complex_pct': scenario_data.get('degreeworks_complex_pct', 0.15),
+                    'degreeworks_cap_enabled': scenario_data.get('degreeworks_cap_enabled', True),
+                    'degreeworks_cap_hours': scenario_data.get('degreeworks_cap_hours', None),
+                    'sprint0_uplift_pct': scenario_data.get('sprint0_uplift_pct', 0.0)
+                }
+
+                st.session_state.inputs = EstimationInputs(**inputs_data)
 
                 # Load pricing overrides if present
                 if 'scenario_overrides' in scenario_data:
@@ -385,6 +435,7 @@ def render_sidebar() -> EstimationInputs:
                             st.session_state.role_mix_overrides
                         )
 
+                st.success("Scenario loaded successfully!")
                 st.rerun()
             except Exception as e:
                 st.error(f"Error loading scenario: {e}")
@@ -1375,7 +1426,21 @@ def main() -> None:
             inputs.locale != old_inputs.locale or
             inputs.include_integrations != old_inputs.include_integrations or
             inputs.include_reports != old_inputs.include_reports or
-            inputs.include_degreeworks != old_inputs.include_degreeworks):
+            inputs.include_degreeworks != old_inputs.include_degreeworks or
+            inputs.degreeworks_include_setup != old_inputs.degreeworks_include_setup or
+            inputs.degreeworks_use_pve_calculator != old_inputs.degreeworks_use_pve_calculator or
+            inputs.degreeworks_majors != old_inputs.degreeworks_majors or
+            inputs.degreeworks_minors != old_inputs.degreeworks_minors or
+            inputs.degreeworks_certificates != old_inputs.degreeworks_certificates or
+            inputs.degreeworks_concentrations != old_inputs.degreeworks_concentrations or
+            inputs.degreeworks_catalog_years != old_inputs.degreeworks_catalog_years or
+            inputs.degreeworks_pve_count != old_inputs.degreeworks_pve_count or
+            inputs.degreeworks_simple_pct != old_inputs.degreeworks_simple_pct or
+            inputs.degreeworks_standard_pct != old_inputs.degreeworks_standard_pct or
+            inputs.degreeworks_complex_pct != old_inputs.degreeworks_complex_pct or
+            inputs.degreeworks_cap_enabled != old_inputs.degreeworks_cap_enabled or
+            inputs.degreeworks_cap_hours != old_inputs.degreeworks_cap_hours or
+            inputs.sprint0_uplift_pct != old_inputs.sprint0_uplift_pct):
             inputs_changed = True
 
     # Update session state
