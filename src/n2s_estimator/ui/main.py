@@ -13,7 +13,12 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-from n2s_estimator.engine.datatypes import DeliveryMix, EstimationInputs
+from n2s_estimator import __version__
+from n2s_estimator.engine.datatypes import (
+    DeliveryMix,
+    EstimationInputs,
+    EstimationResults,
+)
 from n2s_estimator.engine.orchestrator import N2SEstimator
 from n2s_estimator.engine.validators import validate_pricing_overrides
 from n2s_estimator.export.excel import ExcelExporter
@@ -51,6 +56,7 @@ def initialize_session_state() -> None:
 def render_sidebar() -> EstimationInputs:
     """Render sidebar controls and return estimation inputs."""
     st.sidebar.title("N2S Estimator")
+    st.sidebar.caption(f"Version {__version__}")
     st.sidebar.markdown("---")
 
     # Core Parameters
@@ -1460,6 +1466,7 @@ def main() -> None:
 
     # Main content area
     st.title("N2S Delivery Estimator")
+    st.caption(f"Version {__version__} | Comprehensive project estimation with scenario management")
 
     # Display validation warnings
     warnings = estimator.get_validation_warnings()

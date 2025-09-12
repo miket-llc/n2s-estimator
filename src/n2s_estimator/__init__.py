@@ -1,4 +1,7 @@
-"""N2S Delivery Estimator - Streamlit application for project estimation."""
+"""N2S Delivery Estimator package."""
 
-__version__ = "0.11.0"
-
+__version__ = "0.12.0"
+__author__ = "N2S Team"
+__description__ = (
+    "N2S Delivery Estimator - Streamlit application for project estimation"
+)
