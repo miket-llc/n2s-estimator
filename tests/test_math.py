@@ -594,6 +594,241 @@ class TestDeterministicMath:
             dw_scribe_hours = sum(rh.total_hours for rh in results.degreeworks_role_hours if rh.role == 'DegreeWorks Scribe')
             assert dw_scribe_hours == 0, f"Colleague should have 0 DegreeWorks Scribe hours, got {dw_scribe_hours}"
             
-            # Should still have hours from other roles (FC, TA)
-            other_hours = sum(rh.total_hours for rh in results.degreeworks_role_hours if rh.role != 'DegreeWorks Scribe')
-            assert other_hours > 0, "Colleague should have some Degree Works hours from other roles"
+        # Should still have hours from other roles (FC, TA)
+        other_hours = sum(rh.total_hours for rh in results.degreeworks_role_hours if rh.role != 'DegreeWorks Scribe')
+        assert other_hours > 0, "Colleague should have some Degree Works hours from other roles"
+
+    def test_sprint0_uplift_net_new(self, estimator):
+        """Test Sprint 0 uplift for Net New delivery type."""
+        # Test with 2% uplift (default for Net New)
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            sprint0_uplift_pct=0.02
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Get Sprint 0 hours
+        stage_summary = estimator.get_stage_summary(results)
+        sprint0_hours = next((rh.total_hours for rh in stage_summary if rh.stage == 'Sprint 0'), 0)
+        
+        # Expected: 402 + (6700 * 0.02) = 402 + 134 = 536
+        expected_sprint0 = 402.0 + (6700.0 * 0.02)
+        assert abs(sprint0_hours - expected_sprint0) < 1.0, f"Sprint 0 hours {sprint0_hours} != expected {expected_sprint0}"
+        
+        # Total hours should remain 6700
+        assert abs(results.total_hours - 6700.0) < 0.01, f"Total hours changed: {results.total_hours} != 6700"
+
+    def test_sprint0_uplift_modernization(self, estimator):
+        """Test Sprint 0 uplift for Modernization delivery type."""
+        # Test with 1% uplift (default for Modernization)
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Modernization",
+            size_band="Medium",
+            sprint0_uplift_pct=0.01
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Get Sprint 0 hours
+        stage_summary = estimator.get_stage_summary(results)
+        sprint0_hours = next((rh.total_hours for rh in stage_summary if rh.stage == 'Sprint 0'), 0)
+        
+        # Expected: (402 + (6030 * 0.01)) = 402 + 60.3 = 462.3
+        expected_sprint0 = 402.0 + (6030.0 * 0.01)
+        assert abs(sprint0_hours - expected_sprint0) < 1.0, f"Sprint 0 hours {sprint0_hours} != expected {expected_sprint0}"
+
+    def test_sprint0_uplift_stage_weights_sum_to_one(self, estimator):
+        """Test that Sprint 0 uplift preserves stage weights summing to 1.0."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            sprint0_uplift_pct=0.03  # 3% uplift
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Get all stage hours
+        stage_summary = estimator.get_stage_summary(results)
+        total_stage_hours = sum(rh.total_hours for rh in stage_summary)
+        
+        # Calculate stage weights
+        stage_weights = {}
+        for rh in stage_summary:
+            stage_weights[rh.stage] = rh.total_hours / total_stage_hours
+        
+        # Weights should sum to 1.0
+        total_weight = sum(stage_weights.values())
+        assert abs(total_weight - 1.0) < 0.001, f"Stage weights sum to {total_weight}, not 1.0"
+
+    def test_stage_summary_all_packages_includes_addons(self, estimator):
+        """Test that get_stage_summary_all_packages includes add-on stages."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            include_integrations=True,
+            integrations_count=30,
+            include_reports=True,
+            reports_count=40,
+            include_degreeworks=True,
+            degreeworks_majors=10
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        # Base-only summary
+        base_summary = estimator.get_stage_summary(results)
+        base_stages = [rh.stage for rh in base_summary]
+        
+        # All-packages summary
+        all_summary = estimator.get_stage_summary_all_packages(results)
+        all_stages = [rh.stage for rh in all_summary]
+        
+        # All-packages should have more stages
+        assert len(all_stages) > len(base_stages), "All-packages summary should have more stages"
+        
+        # Should include add-on stages
+        expected_addon_stages = ['Integrations', 'Reports', 'Degree Works']
+        for stage in expected_addon_stages:
+            assert stage in all_stages, f"Missing add-on stage {stage} in all-packages summary"
+            assert stage not in base_stages, f"Add-on stage {stage} should not be in base-only summary"
+
+    def test_degreeworks_cap_medium_size(self, estimator):
+        """Test Degree Works cap for Medium size (400h cap)."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            include_degreeworks=True,
+            degreeworks_majors=100,  # High number to trigger cap
+            degreeworks_minors=50,
+            degreeworks_cap_enabled=True,
+            degreeworks_cap_hours=400.0
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        if results.degreeworks_hours:
+            setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
+            pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
+            total_dw = setup_hours + pve_hours
+            
+            # Should be capped at 400 hours
+            assert total_dw <= 400.0, f"Degree Works total {total_dw} exceeds cap of 400h"
+            
+            # Setup should be preserved (300h)
+            assert abs(setup_hours - 300.0) < 1.0, f"Setup hours {setup_hours} != 300"
+            
+            # PVEs should be clamped
+            assert pve_hours <= 100.0, f"PVE hours {pve_hours} should be ≤ 100 (400 - 300)"
+
+    def test_degreeworks_cap_size_based_defaults(self, estimator):
+        """Test Degree Works cap size-based defaults."""
+        size_caps = {
+            'Small': 300.0,
+            'Medium': 400.0, 
+            'Large': 500.0,
+            'Very Large': 600.0
+        }
+        
+        for size, expected_cap in size_caps.items():
+            inputs = EstimationInputs(
+                product="Banner",
+                delivery_type="Net New",
+                size_band=size,
+                include_degreeworks=True,
+                degreeworks_majors=200,  # Very high to test cap
+                degreeworks_cap_enabled=True
+                # No explicit cap_hours - should use size-based default
+            )
+            
+            results = estimator.estimate(inputs)
+            
+            if results.degreeworks_hours:
+                total_dw = sum(results.degreeworks_hours.stage_hours.values())
+                assert total_dw <= expected_cap, f"Size {size}: total {total_dw} > cap {expected_cap}"
+
+    def test_degreeworks_cap_disabled(self, estimator):
+        """Test Degree Works cap when disabled."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            include_degreeworks=True,
+            degreeworks_majors=100,  # High number
+            degreeworks_cap_enabled=False  # Cap disabled
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        if results.degreeworks_hours:
+            total_dw = sum(results.degreeworks_hours.stage_hours.values())
+            # Should be much higher than cap would allow
+            assert total_dw > 400.0, f"With cap disabled, total {total_dw} should be > 400h"
+
+    def test_degreeworks_cap_setup_exceeds_cap(self, estimator):
+        """Test Degree Works cap when Setup alone exceeds cap."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Large",  # Setup = 300 * 1.25 = 375h
+            include_degreeworks=True,
+            degreeworks_majors=100,
+            degreeworks_cap_enabled=True,
+            degreeworks_cap_hours=300.0  # Cap less than Setup
+        )
+        
+        results = estimator.estimate(inputs)
+        
+        if results.degreeworks_hours:
+            setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
+            pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
+            total_dw = setup_hours + pve_hours
+            
+            # Setup should be preserved
+            assert abs(setup_hours - 375.0) < 1.0, f"Setup hours {setup_hours} != 375"
+            
+            # PVEs should be 0 since Setup exceeds cap
+            assert abs(pve_hours) < 0.01, f"PVE hours should be 0 when Setup exceeds cap, got {pve_hours}"
+            
+            # Total should equal Setup
+            assert abs(total_dw - setup_hours) < 0.01, f"Total {total_dw} should equal Setup {setup_hours}"
+
+    def test_no_regression_with_new_features(self, estimator):
+        """Test that existing functionality is not broken by new features."""
+        # Test default scenario (no new features enabled)
+        inputs_default = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium"
+        )
+        
+        results_default = estimator.estimate(inputs_default)
+        
+        # Should still be exactly 6,700 hours
+        assert abs(results_default.total_hours - 6700.0) < 0.01, "Default scenario regression detected"
+        
+        # Test with add-ons (existing functionality)
+        inputs_addons = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            include_integrations=True,
+            integrations_count=30,
+            include_reports=True,
+            reports_count=40
+        )
+        
+        results_addons = estimator.estimate(inputs_addons)
+        
+        # Should have expected add-on totals
+        int_hours = sum(results_addons.integrations_hours.stage_hours.values()) if results_addons.integrations_hours else 0
+        rep_hours = sum(results_addons.reports_hours.stage_hours.values()) if results_addons.reports_hours else 0
+        
+        assert abs(int_hours - 3840.0) < 1.0, f"Integrations regression: {int_hours} != 3840"
+        assert abs(rep_hours - 2448.0) < 1.0, f"Reports regression: {rep_hours} != 2448"

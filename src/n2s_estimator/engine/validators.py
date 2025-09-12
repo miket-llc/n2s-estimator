@@ -269,6 +269,14 @@ def validate_estimation_inputs(inputs: 'EstimationInputs') -> list[str]:
             elif inputs.degreeworks_pve_count > 1000:
                 warnings.append(f"Degree Works direct PVE count ({inputs.degreeworks_pve_count}) seems very high")
 
+        # Check Degree Works cap warnings
+        if inputs.include_degreeworks and hasattr(inputs, 'degreeworks_cap_enabled') and inputs.degreeworks_cap_enabled:
+            # This is a simplified check - in practice, we'd need access to the config to get the actual cap
+            # and compute the actual setup/PVE hours to provide meaningful warnings
+            cap_hours = getattr(inputs, 'degreeworks_cap_hours', None)
+            if cap_hours is not None and cap_hours < 100:
+                warnings.append(f"Degree Works cap ({cap_hours}h) seems very low")
+
     return warnings
 
 

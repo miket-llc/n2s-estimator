@@ -215,6 +215,26 @@ class AddOnEngine:
         if total_pve_hours > 0:
             stage_hours_dict['Degree Works – PVEs'] = total_pve_hours
 
+        # Apply Degree Works cap if enabled
+        total_setup_hours = stage_hours_dict.get('Degree Works – Setup', 0.0)
+        cap_map = self.config.addon_caps.get("Degree Works", {})
+        size_cap = cap_map.get(inputs.size_band, None)
+
+        # Allow UI override if provided
+        cap_enabled = getattr(inputs, "degreeworks_cap_enabled", True)
+        cap_value = getattr(inputs, "degreeworks_cap_hours", None) or size_cap
+
+        if cap_enabled and cap_value:
+            allowance_for_pve = max(cap_value - total_setup_hours, 0.0)
+            if total_pve_hours > allowance_for_pve:
+                ratio = (allowance_for_pve / total_pve_hours) if total_pve_hours > 0 else 0.0
+                # scale down each PVE role
+                for role in list(pve_hours_dict.keys()):
+                    pve_hours_dict[role] *= ratio
+                # replace PVEs stage hours
+                total_pve_hours = sum(pve_hours_dict.values())
+                stage_hours_dict['Degree Works – PVEs'] = total_pve_hours
+
         # Combine role hours from Setup and PVEs
         combined_role_hours_dict = {}
         for role, hours in setup_hours_dict.items():

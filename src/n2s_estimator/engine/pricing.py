@@ -57,11 +57,21 @@ class PricingEngine:
 
             # Get roles for this stage
             stage_roles = self._get_stage_roles(stage)
+            
+            # Calculate effective stage hours by removing disabled roles
+            enabled_stage_roles = [role for role in stage_roles if role in enabled_roles]
+            if not enabled_stage_roles:
+                continue  # No enabled roles for this stage
+                
+            # Calculate total percentage of enabled roles
+            enabled_pct = sum(self._get_role_percentage(stage, role) for role in enabled_stage_roles)
+            if enabled_pct <= 0:
+                continue
+                
+            # Scale down delivery hours proportionally for disabled roles
+            effective_delivery_hours = delivery_hours * enabled_pct
 
-            for role in stage_roles:
-                if role not in enabled_roles:
-                    continue  # Skip disabled roles
-
+            for role in enabled_stage_roles:
                 # Get role percentage for this stage
                 role_pct = self._get_role_percentage(stage, role)
                 if role_pct <= 0:
@@ -71,7 +81,7 @@ class PricingEngine:
                 product_multiplier = self._get_product_multiplier(inputs.product, role)
 
                 # Calculate total hours for this role in this stage
-                total_hours = delivery_hours * role_pct * product_multiplier
+                total_hours = effective_delivery_hours * role_pct * product_multiplier
 
                 if total_hours <= 0:
                     continue

@@ -179,6 +179,19 @@ class N2SEstimator:
 
         return self.pricing.summarize_by_stage(results.base_role_hours)
 
+    def get_stage_summary_all_packages(self, results: EstimationResults) -> list[RoleHours]:
+        """Summarize stage hours across base + all enabled add-ons."""
+        if not self.pricing:
+            return []
+        all_role_hours = results.base_role_hours.copy()
+        if results.integrations_role_hours:
+            all_role_hours.extend(results.integrations_role_hours)
+        if results.reports_role_hours:
+            all_role_hours.extend(results.reports_role_hours)
+        if results.degreeworks_role_hours:
+            all_role_hours.extend(results.degreeworks_role_hours)
+        return self.pricing.summarize_by_stage(all_role_hours)
+
     def get_package_summaries(self, results: EstimationResults) -> dict:
         """Get summary information for each package."""
         summaries = {}

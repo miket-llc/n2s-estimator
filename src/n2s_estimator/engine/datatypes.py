@@ -128,6 +128,11 @@ class EstimationInputs(BaseModel):
     degreeworks_simple_pct: float = Field(default=0.50, ge=0.0, le=1.0)
     degreeworks_standard_pct: float = Field(default=0.35, ge=0.0, le=1.0)
     degreeworks_complex_pct: float = Field(default=0.15, ge=0.0, le=1.0)
+    # Sprint 0 uplift
+    sprint0_uplift_pct: float = Field(default=0.02, ge=0.0, le=0.05)
+    # Degree Works cap controls
+    degreeworks_cap_enabled: bool = Field(default=True)
+    degreeworks_cap_hours: Optional[float] = None  # None = auto by size
 
     @validator('integrations_complex_pct')
     def validate_integrations_mix(cls, v: float, values: dict) -> float:
@@ -222,4 +227,12 @@ class ConfigurationData(BaseModel):
     delivery_type_multipliers: Dict[str, float] = Field(default={
         "Modernization": 0.90,
         "Net New": 1.00
+    })
+    addon_caps: Dict[str, Dict[str, float]] = Field(default={
+        "Degree Works": {
+            "Small": 300.0,
+            "Medium": 400.0,
+            "Large": 500.0,
+            "Very Large": 600.0
+        }
     })

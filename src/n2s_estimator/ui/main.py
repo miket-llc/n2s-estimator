@@ -59,13 +59,15 @@ def render_sidebar() -> EstimationInputs:
     product = st.sidebar.selectbox(
         "Product",
         ["Banner", "Colleague"],
-        index=0 if st.session_state.inputs.product == "Banner" else 1
+        index=0 if st.session_state.inputs.product == "Banner" else 1,
+        key="product_select"
     )
 
     delivery_type = st.sidebar.selectbox(
         "Delivery Type",
         ["Net New", "Modernization"],
-        index=0 if st.session_state.inputs.delivery_type == "Net New" else 1
+        index=0 if st.session_state.inputs.delivery_type == "Net New" else 1,
+        key="delivery_type_select"
     )
 
     size_band = st.sidebar.selectbox(
@@ -73,13 +75,15 @@ def render_sidebar() -> EstimationInputs:
         ["Small (<5k)", "Medium (5-15k)", "Large (15-30k)", "Very Large (>30k)"],
         index=["Small", "Medium", "Large", "Very Large"].index(
             st.session_state.inputs.size_band.split()[0] if st.session_state.inputs.size_band else "Medium"
-        )
+        ),
+        key="size_band_select"
     )
 
     locale = st.sidebar.selectbox(
         "Locale/Region",
         ["US", "Canada", "UK", "EU", "ANZ", "MENA"],
-        index=["US", "Canada", "UK", "EU", "ANZ", "MENA"].index(st.session_state.inputs.locale)
+        index=["US", "Canada", "UK", "EU", "ANZ", "MENA"].index(st.session_state.inputs.locale),
+        key="locale_select"
     )
 
     # Extract size band key
@@ -94,7 +98,8 @@ def render_sidebar() -> EstimationInputs:
     st.sidebar.markdown("**Integrations**")
     include_integrations = st.sidebar.checkbox(
         "Include Integrations",
-        value=st.session_state.inputs.include_integrations
+        value=st.session_state.inputs.include_integrations,
+        key="include_integrations_check"
     )
 
     integrations_count = 30
@@ -137,7 +142,8 @@ def render_sidebar() -> EstimationInputs:
     st.sidebar.markdown("**Reports**")
     include_reports = st.sidebar.checkbox(
         "Include Reports",
-        value=st.session_state.inputs.include_reports
+        value=st.session_state.inputs.include_reports,
+        key="include_reports_check"
     )
 
     reports_count = 40
@@ -181,7 +187,8 @@ def render_sidebar() -> EstimationInputs:
     include_degreeworks = st.sidebar.checkbox(
         "Include Degree Works",
         value=getattr(st.session_state.inputs, "include_degreeworks", False),
-        help="Adds Degree Works Setup (size-scaled) and PVE scribing volume to the estimate."
+        help="Adds Degree Works Setup (size-scaled) and PVE scribing volume to the estimate.",
+        key="include_degreeworks_check"
     )
 
     degreeworks_include_setup = True
@@ -270,6 +277,27 @@ def render_sidebar() -> EstimationInputs:
         )
         dw_complex = 1.0 - dw_simple - dw_standard
         st.sidebar.write(f"Complex %: {dw_complex:.2%}")
+        
+        # Degree Works cap controls
+        degreeworks_cap_enabled = st.sidebar.checkbox(
+            "Cap total Degree Works hours (recommended)",
+            value=getattr(st.session_state.inputs, "degreeworks_cap_enabled", True),
+            help="Prevents runaway estimates. Defaults by size: Small 300h, Medium 400h, Large 500h, Very Large 600h."
+        )
+
+        # Determine default cap by size
+        size_default_caps = {"Small": 300.0, "Medium": 400.0, "Large": 500.0, "Very Large": 600.0}
+        default_cap = size_default_caps.get(size_key, 400.0)
+
+        degreeworks_cap_hours = None
+        if degreeworks_cap_enabled:
+            degreeworks_cap_hours = st.sidebar.number_input(
+                "Cap (hours)",
+                min_value=0.0,
+                value=getattr(st.session_state.inputs, "degreeworks_cap_hours", default_cap),
+                step=50.0,
+                help="Maximum total hours for Degree Works (Setup + PVEs). Leave at the default for size-based guardrails."
+            )
 
     st.sidebar.markdown("---")
 
@@ -282,6 +310,15 @@ def render_sidebar() -> EstimationInputs:
             value=st.session_state.inputs.maturity_factor,
             step=0.05
         )
+        
+        # Sprint 0 uplift
+        default_uplift = 0.02 if delivery_type == "Net New" else 0.01
+        sprint0_uplift_pct = st.slider(
+            "Sprint 0 uplift (+% of total)", 0.0, 0.05, 
+            value=getattr(st.session_state.inputs, "sprint0_uplift_pct", default_uplift),
+            step=0.005,
+            help="Adds this absolute % of total hours to Sprint 0 and subtracts proportionally from Plan+Configure to keep Stage Weights at 100%."
+        )
 
     # Scenario Management
     st.sidebar.markdown("---")
@@ -290,7 +327,7 @@ def render_sidebar() -> EstimationInputs:
     col1, col2 = st.sidebar.columns(2)
 
     with col1:
-        if st.button("Save Scenario", use_container_width=True):
+        if st.button("Save Scenario", width="stretch"):
             scenario_data = {
                 'product': product,
                 'delivery_type': delivery_type,
@@ -380,7 +417,10 @@ def render_sidebar() -> EstimationInputs:
         degreeworks_pve_count=degreeworks_pve_count,
         degreeworks_simple_pct=dw_simple,
         degreeworks_standard_pct=dw_standard,
-        degreeworks_complex_pct=dw_complex
+        degreeworks_complex_pct=dw_complex,
+        sprint0_uplift_pct=sprint0_uplift_pct,
+        degreeworks_cap_enabled=degreeworks_cap_enabled if include_degreeworks else True,
+        degreeworks_cap_hours=degreeworks_cap_hours if include_degreeworks else None
     )
 
     return inputs
@@ -505,7 +545,7 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
 
         st.dataframe(
             df,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 'Total Cost': st.column_config.NumberColumn(format="$%d"),
                 'Blended Rate': st.column_config.NumberColumn(format="$%d/hr")
@@ -516,8 +556,23 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
 
     with col1:
         # Stage summary
+        include_addons = st.checkbox(
+            "Include add-ons in Stage Summary", 
+            value=True, 
+            help="When enabled, Stage Summary includes Integrations, Reports, and Degree Works."
+        )
+        
         st.markdown("#### Stage Summary")
-        stage_summary = estimator.get_stage_summary(results)
+        if include_addons:
+            st.caption("All packages (Base N2S + Add-ons)")
+        else:
+            st.caption("Base N2S only")
+            
+        stage_summary = (
+            estimator.get_stage_summary_all_packages(results)
+            if include_addons else
+            estimator.get_stage_summary(results)  # base-only
+        )
         if stage_summary:
             stage_df = pd.DataFrame([{
                 'Stage': rh.stage,
@@ -530,7 +585,7 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
 
             st.dataframe(
                 stage_df,
-                use_container_width=True,
+                width="stretch",
                 column_config={
                     'Cost': st.column_config.NumberColumn(format="$%d")
                 }
@@ -552,7 +607,7 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
 
             st.dataframe(
                 role_df,
-                use_container_width=True,
+                width="stretch",
                 column_config={
                     'Cost': st.column_config.NumberColumn(format="$%d")
                 }
@@ -588,7 +643,7 @@ def render_integrations_tab(estimator: N2SEstimator, results: 'EstimationResults
 
         st.dataframe(
             tier_df,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 'Mix %': st.column_config.NumberColumn(format="%.1%")
             }
@@ -613,7 +668,7 @@ def render_integrations_tab(estimator: N2SEstimator, results: 'EstimationResults
 
         st.dataframe(
             role_df,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 'Cost': st.column_config.NumberColumn(format="$%d"),
                 'Blended Rate': st.column_config.NumberColumn(format="$%d/hr")
@@ -650,7 +705,7 @@ def render_reports_tab(estimator: N2SEstimator, results: 'EstimationResults') ->
 
         st.dataframe(
             tier_df,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 'Mix %': st.column_config.NumberColumn(format="%.1%")
             }
@@ -675,7 +730,7 @@ def render_reports_tab(estimator: N2SEstimator, results: 'EstimationResults') ->
 
         st.dataframe(
             role_df,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 'Cost': st.column_config.NumberColumn(format="$%d"),
                 'Blended Rate': st.column_config.NumberColumn(format="$%d/hr")
@@ -683,7 +738,7 @@ def render_reports_tab(estimator: N2SEstimator, results: 'EstimationResults') ->
         )
 
 
-def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults') -> None:
+def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults', inputs: 'EstimationInputs') -> None:
     """Render Degree Works analysis tab."""
     st.subheader("Degree Works Add-on Package")
 
@@ -704,6 +759,13 @@ def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults'
             st.metric("PVE Hours", f"{pve_hours:,.0f}", help="Program-Version Equivalents scribing")
         with col3:
             st.metric("Total DW Hours", f"{setup_hours + pve_hours:,.0f}")
+            
+        # Show cap information if enabled
+        if inputs.degreeworks_cap_enabled:
+            size_default_caps = {"Small": 300.0, "Medium": 400.0, "Large": 500.0, "Very Large": 600.0}
+            default_cap = size_default_caps.get(inputs.size_band, 400.0)
+            cap_hours = inputs.degreeworks_cap_hours or default_cap
+            st.info(f"Degree Works total is capped at **{cap_hours:.0f} hours** for size '{inputs.size_band}'. PVEs are clamped after Setup.")
 
     # PVE Calculator Summary
     inputs = results.inputs
@@ -738,7 +800,7 @@ def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults'
 
         st.dataframe(
             tier_df,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 'Mix %': st.column_config.NumberColumn(format="%.1%")
             }
@@ -763,7 +825,7 @@ def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults'
 
         st.dataframe(
             role_df,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 'Cost': st.column_config.NumberColumn(format="$%d"),
                 'Blended Rate': st.column_config.NumberColumn(format="$%d/hr")
@@ -797,7 +859,7 @@ def render_charts_tab(estimator: N2SEstimator, results: 'EstimationResults') -> 
                 names=pie_data['Split'],
                 title="Cost by Delivery Split"
             )
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(fig_pie, width="stretch")
 
     with col2:
         # Package breakdown pie chart
@@ -820,7 +882,7 @@ def render_charts_tab(estimator: N2SEstimator, results: 'EstimationResults') -> 
                 names=package_data['Package'],
                 title="Cost by Package"
             )
-            st.plotly_chart(fig_package, use_container_width=True)
+            st.plotly_chart(fig_package, width="stretch")
 
     # Stacked bar chart by stage and role
     st.markdown("#### Cost by Stage x Role")
@@ -846,7 +908,7 @@ def render_charts_tab(estimator: N2SEstimator, results: 'EstimationResults') -> 
         )
 
         fig_bar.update_layout(height=500)
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.plotly_chart(fig_bar, width="stretch")
 
 
 def render_help_tab() -> None:
@@ -860,14 +922,15 @@ def render_help_tab() -> None:
     
     1. **Start from Base N2S baseline** (6,700h)
     2. **Apply Size & Delivery Type multipliers** (Small 0.85x, Medium 1.0x, Large 1.25x, Very Large 1.5x; Modernization 0.9x, Net New 1.0x)
-    3. **Allocate to stages** via Stage Weights (Start 2.5%, Prepare 2.5%, Plan 10%, Configure 34%, Test 20%, Deploy 10%, etc.)
-    4. **Split presales vs delivery** by Activities/Stages (Start 60% presales, Prepare 30% presales, others 0%)
-    5. **Expand delivery hours to roles** by per-stage Role Mix (Configure heavily weighted to technical roles)
-    6. **Apply Onshore/Offshore/Partner split** (global 70/20/10 or per-role overrides)
-    7. **Price via rate cards** (selected Locale affects rates, not hours)
-    8. **Add-ons** (Integrations, Reports, Degree Works) computed similarly
-    9. **Subtotals by package** (Base N2S + enabled add-ons)
-    10. **Export** a styled Excel workbook with all breakdowns
+    3. **Apply Sprint 0 uplift** (configurable % of total added to Sprint 0, subtracted from Plan+Configure)
+    4. **Allocate to stages** via adjusted Stage Weights (Start 2.5%, Prepare 2.5%, Plan 10%, Configure 34%, Test 20%, Deploy 10%, etc.)
+    5. **Split presales vs delivery** by Activities/Stages (Start 60% presales, Prepare 30% presales, others 0%)
+    6. **Expand delivery hours to roles** by per-stage Role Mix (Configure heavily weighted to technical roles)
+    7. **Apply Onshore/Offshore/Partner split** (global 70/20/10 or per-role overrides)
+    8. **Price via rate cards** (selected Locale affects rates, not hours)
+    9. **Add-ons** (Integrations, Reports, Degree Works) computed similarly
+    10. **Subtotals by package** (Base N2S + enabled add-ons)
+    11. **Export** a styled Excel workbook with all breakdowns
     """)
     
     # Degree Works Setup explanation
@@ -902,6 +965,19 @@ def render_help_tab() -> None:
     **Delivery only** (no presales component)
     """)
     
+    # Degree Works cap explanation
+    st.markdown("### 🛡️ Degree Works Cap (Size-based Guardrails)")
+    st.info("""
+    **Degree Works totals are capped by size** (Small 300h, Medium 400h, Large 500h, Very Large 600h by default). 
+    We clamp PVEs after applying Setup so the overall DW estimate cannot exceed the cap.
+    
+    **Cap Logic:**
+    - Setup hours are always preserved (size-scaled)
+    - PVEs are clamped if total would exceed cap
+    - If Setup alone approaches cap, PVEs drop to near-zero
+    - Cap can be overridden in Advanced Settings
+    """)
+    
     # Important notes
     st.markdown("### ⚠️ Notes & Guardrails")
     st.warning("""
@@ -911,6 +987,8 @@ def render_help_tab() -> None:
     - **DegreeWorks Scribe is Banner-only** by default (Product Role Map)
     - **All tier mixes must sum to 100%** (validated automatically)
     - **Integrations & Reports** calculations remain completely unchanged
+    - **Stage Summary toggle** shows base-only vs all-packages view
+    - **Sprint 0 uplift** adds configurable % to Sprint 0, subtracts from Plan+Configure
     """)
     
     # Role distribution details
@@ -1070,7 +1148,7 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
                 })
             df_mix = st.data_editor(
                 pd.DataFrame(rows),
-                use_container_width=True,
+                width="stretch",
                 num_rows="dynamic",
                 key="mix_editor"
             )
@@ -1126,7 +1204,7 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
 
         df_rates = st.data_editor(
             pd.DataFrame(data),
-            use_container_width=True,
+            width="stretch",
             num_rows="dynamic",
             key="rates_editor",
             column_config={
@@ -1182,8 +1260,25 @@ def main() -> None:
     # Render sidebar and get inputs
     inputs = render_sidebar()
 
+    # Check if inputs have changed and force rerun if needed
+    inputs_changed = False
+    if hasattr(st.session_state, 'inputs'):
+        old_inputs = st.session_state.inputs
+        if (inputs.product != old_inputs.product or 
+            inputs.delivery_type != old_inputs.delivery_type or
+            inputs.size_band != old_inputs.size_band or
+            inputs.locale != old_inputs.locale or
+            inputs.include_integrations != old_inputs.include_integrations or
+            inputs.include_reports != old_inputs.include_reports or
+            inputs.include_degreeworks != old_inputs.include_degreeworks):
+            inputs_changed = True
+
     # Update session state
     st.session_state.inputs = inputs
+
+    # Force rerun if inputs changed
+    if inputs_changed:
+        st.rerun()
 
     # Run estimation
     try:
@@ -1221,7 +1316,7 @@ def main() -> None:
         render_reports_tab(estimator, results)
 
     with tab4:
-        render_degreeworks_tab(estimator, results)
+        render_degreeworks_tab(estimator, results, inputs)
 
     with tab5:
         render_charts_tab(estimator, results)
@@ -1240,7 +1335,7 @@ def main() -> None:
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col2:
-        if st.button("📁 Export to Excel", type="primary", use_container_width=True):
+        if st.button("📁 Export to Excel", type="primary", width="stretch"):
             try:
                 exporter = ExcelExporter()
                 excel_data = exporter.export_to_excel(results, estimator)
@@ -1252,7 +1347,7 @@ def main() -> None:
                     data=excel_data,
                     file_name=filename,
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
+                    width="stretch"
                 )
 
                 st.success("Excel file generated successfully!")

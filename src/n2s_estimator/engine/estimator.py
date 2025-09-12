@@ -28,10 +28,31 @@ class EstimationEngine:
             inputs.maturity_factor
         )
 
-        # Step 2: Allocate to stages via stage weights
+        # Step 2: Build working weights dict and apply Sprint 0 uplift
+        weights = {sw.stage: sw.weight for sw in self.config.stage_weights}
+        
+        # Apply Sprint 0 uplift (absolute % of total)
+        uplift = inputs.sprint0_uplift_pct if hasattr(inputs, 'sprint0_uplift_pct') else 0.0
+        if uplift > 0:
+            donors = ['Plan', 'Configure']
+            donor_total = sum(weights.get(d, 0.0) for d in donors)
+            if donor_total > 0:
+                # add uplift to Sprint 0
+                weights['Sprint 0'] = weights.get('Sprint 0', 0.0) + uplift
+                # subtract proportionally from donors
+                for d in donors:
+                    w = weights.get(d, 0.0)
+                    delta = uplift * (w / donor_total)
+                    weights[d] = max(w - delta, 0.0)
+                # renormalize small float drift
+                total = sum(weights.values())
+                for k in weights:
+                    weights[k] = weights[k] / total
+        
+        # Allocate to stages using adjusted weights
         stage_hours_dict = {}
-        for stage_weight in self.config.stage_weights:
-            stage_hours_dict[stage_weight.stage] = adjusted_base * stage_weight.weight
+        for stage, weight in weights.items():
+            stage_hours_dict[stage] = adjusted_base * weight
 
         # Step 3: Split each stage into presales vs delivery
         presales_hours_dict = {}

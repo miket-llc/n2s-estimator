@@ -331,3 +331,151 @@ class TestEndToEnd:
         # Excel files start with PK (ZIP signature)
         assert excel_data[:2] == b'PK', "Excel file should start with PK signature"
 
+    def test_sprint0_uplift_integration(self, estimator):
+        """Test Sprint 0 uplift integration with full estimation pipeline."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            locale="US",
+            sprint0_uplift_pct=0.02,
+            include_integrations=True,
+            integrations_count=10,
+            include_reports=True,
+            reports_count=5
+        )
+
+        results = estimator.estimate(inputs)
+
+        # Should complete without errors
+        assert results.total_hours > 0
+        assert results.total_cost > 0
+
+        # Sprint 0 should have uplift applied
+        stage_summary = estimator.get_stage_summary(results)
+        sprint0_hours = next((rh.total_hours for rh in stage_summary if rh.stage == 'Sprint 0'), 0)
+        assert sprint0_hours > 402.0, f"Sprint 0 hours {sprint0_hours} should be > 402 (uplift applied)"
+
+    def test_stage_summary_toggle_integration(self, estimator):
+        """Test Stage Summary toggle functionality integration."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            locale="US",
+            include_integrations=True,
+            integrations_count=20,
+            include_reports=True,
+            reports_count=15,
+            include_degreeworks=True,
+            degreeworks_majors=5
+        )
+
+        results = estimator.estimate(inputs)
+
+        # Test both summary types
+        base_summary = estimator.get_stage_summary(results)
+        all_summary = estimator.get_stage_summary_all_packages(results)
+
+        # Base summary should have fewer stages
+        assert len(base_summary) < len(all_summary), "Base summary should have fewer stages"
+
+        # All summary should include add-on stages
+        all_stages = [rh.stage for rh in all_summary]
+        assert 'Integrations' in all_stages
+        assert 'Reports' in all_stages
+        assert 'Degree Works' in all_stages
+
+        # Base summary should not include add-on stages
+        base_stages = [rh.stage for rh in base_summary]
+        assert 'Integrations' not in base_stages
+        assert 'Reports' not in base_stages
+        assert 'Degree Works' not in base_stages
+
+    def test_degreeworks_cap_integration(self, estimator):
+        """Test Degree Works cap integration with full estimation pipeline."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            locale="US",
+            include_degreeworks=True,
+            degreeworks_majors=50,  # High number to test cap
+            degreeworks_minors=25,
+            degreeworks_cap_enabled=True,
+            degreeworks_cap_hours=400.0
+        )
+
+        results = estimator.estimate(inputs)
+
+        # Should complete without errors
+        assert results.total_hours > 0
+        assert results.total_cost > 0
+
+        # Degree Works should be capped
+        if results.degreeworks_hours:
+            total_dw = sum(results.degreeworks_hours.stage_hours.values())
+            assert total_dw <= 400.0, f"Degree Works total {total_dw} exceeds cap of 400h"
+
+    def test_all_new_features_together(self, estimator):
+        """Test all new features working together."""
+        inputs = EstimationInputs(
+            product="Banner",
+            delivery_type="Net New",
+            size_band="Medium",
+            locale="US",
+            # Sprint 0 uplift
+            sprint0_uplift_pct=0.02,
+            # Add-ons
+            include_integrations=True,
+            integrations_count=15,
+            include_reports=True,
+            reports_count=10,
+            include_degreeworks=True,
+            degreeworks_majors=20,
+            # Degree Works cap
+            degreeworks_cap_enabled=True,
+            degreeworks_cap_hours=400.0
+        )
+
+        results = estimator.estimate(inputs)
+
+        # Should complete without errors
+        assert results.total_hours > 0
+        assert results.total_cost > 0
+
+        # Test Sprint 0 uplift
+        stage_summary = estimator.get_stage_summary(results)
+        sprint0_hours = next((rh.total_hours for rh in stage_summary if rh.stage == 'Sprint 0'), 0)
+        assert sprint0_hours > 402.0, "Sprint 0 uplift not applied"
+
+        # Test Stage Summary toggle
+        base_summary = estimator.get_stage_summary(results)
+        all_summary = estimator.get_stage_summary_all_packages(results)
+        assert len(all_summary) > len(base_summary), "Stage Summary toggle not working"
+
+        # Test Degree Works cap
+        if results.degreeworks_hours:
+            total_dw = sum(results.degreeworks_hours.stage_hours.values())
+            assert total_dw <= 400.0, "Degree Works cap not working"
+
+    def test_ui_compatibility(self, estimator):
+        """Test that new features are compatible with UI expectations."""
+        # Test that all new fields have sensible defaults
+        inputs = EstimationInputs()
+        
+        # New fields should have defaults
+        assert hasattr(inputs, 'sprint0_uplift_pct')
+        assert hasattr(inputs, 'degreeworks_cap_enabled')
+        assert hasattr(inputs, 'degreeworks_cap_hours')
+        
+        # Defaults should be reasonable
+        assert 0.0 <= inputs.sprint0_uplift_pct <= 0.05
+        assert isinstance(inputs.degreeworks_cap_enabled, bool)
+        assert inputs.degreeworks_cap_hours is None or inputs.degreeworks_cap_hours > 0
+
+        # Test estimation with defaults
+        results = estimator.estimate(inputs)
+        assert results.total_hours > 0
+        assert results.total_cost > 0
+

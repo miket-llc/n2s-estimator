@@ -13,12 +13,12 @@ def create_workbook() -> None:
         # Role Aliases sheet - for canonicalization
         role_aliases_data = pd.DataFrame({
             'Alias': [
-                'Business Analyst', 'Platform Lead', 'Technical Lead', 
+                'Business Analyst', 'Platform Lead', 
                 'Integration Developer', 'Integration Consultant', 'Extensibility Developer',
                 'DW Scribe', 'Degree Works Scribe'
             ],
             'Canonical Role': [
-                'Functional Consultant', 'Technical Architect', 'Technical Architect',
+                'Functional Consultant', 'Technical Architect',
                 'Integration Engineer', 'Integration Engineer', 'Extensibility Engineer',
                 'DegreeWorks Scribe', 'DegreeWorks Scribe'
             ]
@@ -86,20 +86,20 @@ def create_workbook() -> None:
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
             
-        # Configure - PM 0.10, SA 0.15, TA 0.08, FC 0.20, QA 0.10, TL 0.27, IE 0.06, EE 0.04 
-        for role, pct in [('Project Manager', 0.10), ('Solution Architect', 0.15), ('Technical Architect', 0.08), ('Functional Consultant', 0.20), ('QA Engineer', 0.10), ('Technical Lead', 0.27), ('Integration Engineer', 0.06), ('Extensibility Engineer', 0.04)]:
+        # Configure - PM 0.10, SA 0.15, TA 0.28, FC 0.20, QA 0.10, IL 0.07, IE 0.06, EE 0.04 
+        for role, pct in [('Project Manager', 0.10), ('Solution Architect', 0.15), ('Technical Architect', 0.28), ('Functional Consultant', 0.20), ('QA Engineer', 0.10), ('Integration Lead', 0.07), ('Integration Engineer', 0.06), ('Extensibility Engineer', 0.04)]:
             role_mix_stages.append('Configure')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
             
-        # Test - PM 0.15, SA 0.10, TA 0.04, FC 0.15, QA 0.40, TL 0.10, IE 0.04, EE 0.02
-        for role, pct in [('Project Manager', 0.15), ('Solution Architect', 0.10), ('Technical Architect', 0.04), ('Functional Consultant', 0.15), ('QA Engineer', 0.40), ('Technical Lead', 0.10), ('Integration Engineer', 0.04), ('Extensibility Engineer', 0.02)]:
+        # Test - PM 0.15, SA 0.10, TA 0.04, FC 0.15, QA 0.40, IE 0.06, EE 0.10
+        for role, pct in [('Project Manager', 0.15), ('Solution Architect', 0.10), ('Technical Architect', 0.04), ('Functional Consultant', 0.15), ('QA Engineer', 0.40), ('Integration Engineer', 0.06), ('Extensibility Engineer', 0.10)]:
             role_mix_stages.append('Test')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
             
-        # Deploy - PM 0.20, SA 0.15, TA 0.06, FC 0.10, QA 0.20, TL 0.25, IE 0.04
-        for role, pct in [('Project Manager', 0.20), ('Solution Architect', 0.15), ('Technical Architect', 0.06), ('Functional Consultant', 0.10), ('QA Engineer', 0.20), ('Technical Lead', 0.25), ('Integration Engineer', 0.04)]:
+        # Deploy - PM 0.20, SA 0.15, TA 0.06, FC 0.10, QA 0.20, IE 0.15, EE 0.14
+        for role, pct in [('Project Manager', 0.20), ('Solution Architect', 0.15), ('Technical Architect', 0.06), ('Functional Consultant', 0.10), ('QA Engineer', 0.20), ('Integration Engineer', 0.15), ('Extensibility Engineer', 0.14)]:
             role_mix_stages.append('Deploy')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
@@ -126,13 +126,13 @@ def create_workbook() -> None:
         # Rates sheet (placeholder rates) - Updated with canonical roles
         rates_data = pd.DataFrame({
             'Role': [
-                'Project Manager', 'Solution Architect', 'Technical Lead', 'Functional Consultant', 'QA Engineer',
+                'Project Manager', 'Solution Architect', 'Functional Consultant', 'QA Engineer',
                 'Integration Engineer', 'Technical Architect', 'Integration Lead', 'Reporting Consultant',
                 'Extensibility Engineer', 'DegreeWorks Scribe'
             ],
-            'Onshore Rate': [150, 175, 160, 140, 130, 170, 180, 165, 155, 165, 145],
-            'Offshore Rate': [75, 90, 85, 70, 65, 85, 95, 80, 80, 82, 72],
-            'Partner Rate': [120, 140, 130, 110, 100, 135, 145, 125, 125, 132, 116]
+            'Onshore Rate': [150, 175, 160, 140, 130, 170, 180, 165, 155, 145],
+            'Offshore Rate': [75, 90, 85, 70, 65, 85, 95, 80, 80, 72],
+            'Partner Rate': [120, 140, 130, 110, 100, 135, 145, 125, 125, 116]
         })
         rates_data.to_excel(writer, sheet_name='Rates', index=False)
 
@@ -193,7 +193,7 @@ def create_workbook() -> None:
                 # Reports (unchanged)
                 'Reporting Consultant', 'Solution Architect', 'QA Engineer', 'Project Manager',
                 'Reporting Consultant', 'Solution Architect', 'QA Engineer', 'Project Manager',
-                'Reporting Consultant', 'Solution Architect', 'Technical Lead', 'QA Engineer',
+                'Reporting Consultant', 'Solution Architect', 'QA Engineer', 'Project Manager',
                 # Degree Works
                 'DegreeWorks Scribe', 'Functional Consultant', 'Technical Architect',  # Setup
                 'DegreeWorks Scribe', 'Functional Consultant', 'Technical Architect',  # PVE Simple
@@ -252,20 +252,20 @@ def create_workbook() -> None:
         # Product Role Map sheet - Updated with canonical roles
         product_role_data = pd.DataFrame({
             'Role': [
-                'Project Manager', 'Solution Architect', 'Technical Lead', 'Functional Consultant', 'QA Engineer',
+                'Project Manager', 'Solution Architect', 'Functional Consultant', 'QA Engineer',
                 'Integration Engineer', 'Technical Architect', 'Integration Lead', 'Reporting Consultant',
                 'Extensibility Engineer', 'DegreeWorks Scribe'
             ],
-            'Banner Enabled': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],  # DegreeWorks Scribe enabled for Banner
-            'Colleague Enabled': [1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0],  # DegreeWorks Scribe disabled for Colleague
-            'Multiplier': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+            'Banner Enabled': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],  # All roles enabled for Banner
+            'Colleague Enabled': [1, 1, 1, 1, 1, 0, 0, 1, 1, 0],  # Technical Architect, Integration Lead, DegreeWorks Scribe disabled for Colleague
+            'Multiplier': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         })
         product_role_data.to_excel(writer, sheet_name='Product Role Map', index=False)
 
         # Rates (Locales) sheet - expanded rate card with canonical roles
         locales = ['US', 'Canada', 'UK', 'EU', 'ANZ', 'MENA']
         roles = [
-            'Project Manager', 'Solution Architect', 'Technical Lead', 
+            'Project Manager', 'Solution Architect', 
             'Functional Consultant', 'QA Engineer', 'Integration Engineer', 
             'Technical Architect', 'Integration Lead', 'Reporting Consultant',
             'Extensibility Engineer', 'DegreeWorks Scribe'

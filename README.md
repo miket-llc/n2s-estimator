@@ -3,10 +3,11 @@
 A professional Streamlit application for estimating N2S (Banner/Colleague) delivery projects with configurable parameters, add-on packages, and Excel export capabilities.
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Tests](https://img.shields.io/badge/tests-35%2F35%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-50%2B%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-70%25-yellowgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Streamlit](https://img.shields.io/badge/streamlit-1.49%2B-red)
+![Version](https://img.shields.io/badge/version-0.10.0-blue)
 
 **🌐 Live Application**: Currently running at `http://localhost:8501` (when started locally)
 
@@ -15,7 +16,10 @@ A professional Streamlit application for estimating N2S (Banner/Colleague) deliv
 The N2S Delivery Estimator provides:
 
 - **Base N2S Package Estimation**: Core delivery hours based on size, type, and product
-- **Add-on Packages**: Independent pricing for Integrations and Reports
+- **Sprint 0 Uplift**: Configurable percentage boost to Sprint 0 stage (defaults: Net New 2%, Modernization 1%)
+- **Add-on Packages**: Independent pricing for Integrations, Reports, and Degree Works
+- **Stage Summary Toggle**: View base-only or all-packages stage breakdowns
+- **Degree Works Cap**: Size-based guardrails to prevent runaway estimates (Small 300h, Medium 400h, Large 500h, Very Large 600h)
 - **Multi-locale Support**: Rate cards for US, Canada, UK, EU, ANZ, and MENA
 - **Delivery Split Options**: Onshore/Offshore/Partner mix configurations
 - **Excel Export**: Board-ready reports with styling and conditional formatting
@@ -48,6 +52,37 @@ streamlit run src/n2s_estimator/ui/main.py
 ```
 
 The application will open in your browser at `http://localhost:8501`.
+
+## 🆕 New Features (v0.10.0)
+
+### Sprint 0 Uplift
+- **Configurable Boost**: Add percentage of total hours to Sprint 0 stage
+- **Smart Defaults**: Net New projects get 2% uplift, Modernization gets 1%
+- **Proportional Adjustment**: Uplift is subtracted from Plan and Configure stages
+- **Weight Preservation**: Stage weights always sum to 100%
+
+### Stage Summary Toggle
+- **All Packages View**: Shows Integrations, Reports, and Degree Works stages
+- **Base-Only View**: Traditional view with just Base N2S stages
+- **Real-time Switching**: Toggle between views without re-estimation
+- **Clear Labeling**: Visual indicators show which view is active
+
+### Degree Works Cap
+- **Size-Based Guardrails**: Automatic caps by school size
+  - Small: 300 hours
+  - Medium: 400 hours  
+  - Large: 500 hours
+  - Very Large: 600 hours
+- **Smart Clamping**: PVEs are reduced when total exceeds cap
+- **Setup Preservation**: Setup hours are never reduced
+- **Override Capability**: Custom cap values supported
+- **Visual Feedback**: Clear indication when cap is applied
+
+### Enhanced UI Controls
+- **Advanced Settings**: Sprint 0 uplift slider in collapsible section
+- **Degree Works Controls**: Cap enable/disable and custom values
+- **Help Integration**: Contextual help text for all new features
+- **Validation Warnings**: User-friendly feedback for edge cases
 
 ## Configuration
 
@@ -185,6 +220,21 @@ src/n2s_estimator/
 **Add-ons (when enabled):**
 - Integrations (30 items, default mix): ~3,840 hours
 - Reports (40 items, default mix): ~2,448 hours
+
+## Changelog
+
+### v0.10.0 (2024-12-19)
+- **Sprint 0 Uplift**: Configurable percentage boost to Sprint 0 stage
+- **Stage Summary Toggle**: Switch between base-only and all-packages views
+- **Degree Works Cap**: Size-based guardrails to prevent runaway estimates
+- **Enhanced UI**: Advanced settings panel with contextual help
+- **Comprehensive Testing**: 50+ test cases covering all new features
+
+### v0.9.0 (2024-01-20)
+- Initial release with Base N2S estimation
+- Integrations and Reports add-on packages
+- Multi-locale support and Excel export
+- Complete test suite and documentation
 
 ## Troubleshooting
 

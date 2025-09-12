@@ -5,6 +5,38 @@ All notable changes to the N2S Delivery Estimator project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2024-12-19
+
+### Added
+
+**Enhanced User Interface**
+- Comprehensive Rates & Mixes Editor for advanced configuration management
+- Interactive data editing capabilities with real-time validation
+- Enhanced user experience for managing rate cards and delivery mixes
+
+**New Add-on Package**
+- Degree Works add-on with sophisticated PVE (Product Value Estimation) calculation
+- Advanced calculation methodology for Degree Works implementation projects
+- Integrated pricing and estimation for Degree Works-specific requirements
+
+**Data Visualization**
+- Added Plotly support for enhanced data visualization capabilities
+- Improved chart rendering and interactive features
+- Better visual representation of estimation data and results
+
+### Fixed
+
+**UI Improvements**
+- Removed unsupported help parameter from data_editor components
+- Improved compatibility and stability of data editing interfaces
+- Enhanced error handling and user feedback
+
+### Technical Improvements
+
+**Dependencies**
+- Added plotly to requirements.txt for comprehensive data visualization support
+- Updated dependency management for better visualization capabilities
+
 ## [0.9.0] - 2024-01-20
 
 ### Added

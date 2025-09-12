@@ -44,7 +44,8 @@ class ConfigurationLoader:
             delivery_mix=self._load_delivery_mix(),
             addon_packages=self._load_addon_packages(),
             product_role_map=self._load_product_role_map(),
-            role_aliases=self._get_role_aliases_list()
+            role_aliases=self._get_role_aliases_list(),
+            addon_caps=self._load_addon_caps()
         )
 
     def _load_all_sheets(self) -> None:
@@ -297,3 +298,51 @@ class ConfigurationLoader:
             ))
 
         return role_map
+
+    def _load_addon_caps(self) -> Dict[str, Dict[str, float]]:
+        """Load add-on caps from Inputs sheet or dedicated Add-On Caps sheet."""
+        # Default caps
+        default_caps = {
+            "Degree Works": {
+                "Small": 300.0,
+                "Medium": 400.0,
+                "Large": 500.0,
+                "Very Large": 600.0
+            }
+        }
+        
+        # Try dedicated Add-On Caps sheet first
+        if 'Add-On Caps' in self._sheets:
+            df = self._sheets['Add-On Caps']
+            caps = {}
+            
+            for _, row in df.iterrows():
+                addon_name = row['Add-On']
+                size_band = row['Size Band']
+                cap_hours = float(row['Cap Hours'])
+                
+                if addon_name not in caps:
+                    caps[addon_name] = {}
+                caps[addon_name][size_band] = cap_hours
+            
+            return caps
+        
+        # Try Inputs sheet for Degree Works caps
+        if 'Inputs' in self._sheets:
+            inputs_df = self._sheets['Inputs']
+            caps = default_caps.copy()
+            
+            # Look for Degree Works Cap rows
+            for _, row in inputs_df.iterrows():
+                param = str(row['Parameter']).strip()
+                if 'Degree Works Cap' in param and '-' in param:
+                    try:
+                        size_band = param.split('-')[-1].strip()
+                        cap_hours = float(row['Value'])
+                        caps['Degree Works'][size_band] = cap_hours
+                    except (ValueError, IndexError):
+                        continue
+            
+            return caps
+        
+        return default_caps
