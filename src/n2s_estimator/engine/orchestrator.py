@@ -1,7 +1,6 @@
 """Main orchestration engine that coordinates all N2S estimation components."""
 
 from pathlib import Path
-from typing import Optional, List, Dict
 
 from .addons import AddOnEngine
 from .datatypes import ConfigurationData, EstimationInputs, EstimationResults, RoleHours, StageHours
@@ -17,11 +16,11 @@ class N2SEstimator:
     def __init__(self, workbook_path: Path) -> None:
         """Initialize estimator with workbook path."""
         self.workbook_path = workbook_path
-        self.config: Optional[ConfigurationData] = None
-        self.estimator: Optional[EstimationEngine] = None
-        self.pricing: Optional[PricingEngine] = None
-        self.addons: Optional[AddOnEngine] = None
-        self.validator: Optional[ConfigurationValidator] = None
+        self.config: ConfigurationData | None = None
+        self.estimator: EstimationEngine | None = None
+        self.pricing: PricingEngine | None = None
+        self.addons: AddOnEngine | None = None
+        self.validator: ConfigurationValidator | None = None
 
         self._load_configuration()
 
@@ -39,12 +38,12 @@ class N2SEstimator:
     def estimate(self, inputs: EstimationInputs) -> EstimationResults:
         """
         Perform complete N2S estimation.
-        
+
         Returns EstimationResults with all calculations and breakdowns.
         """
         if not all([self.estimator, self.pricing, self.addons]):
             raise RuntimeError("Estimator not properly initialized")
-        
+
         assert self.estimator is not None
         assert self.pricing is not None
         assert self.addons is not None
@@ -102,14 +101,14 @@ class N2SEstimator:
     def _calculate_totals(
         self,
         base_stage_hours: StageHours,
-        base_role_hours: List[RoleHours],
-        integrations_stage_hours: Optional[StageHours],
-        integrations_role_hours: Optional[List[RoleHours]],
-        reports_stage_hours: Optional[StageHours],
-        reports_role_hours: Optional[List[RoleHours]],
-        degreeworks_stage_hours: Optional[StageHours],
-        degreeworks_role_hours: Optional[List[RoleHours]]
-    ) -> Dict:
+        base_role_hours: list[RoleHours],
+        integrations_stage_hours: StageHours | None,
+        integrations_role_hours: list[RoleHours] | None,
+        reports_stage_hours: StageHours | None,
+        reports_role_hours: list[RoleHours] | None,
+        degreeworks_stage_hours: StageHours | None,
+        degreeworks_role_hours: list[RoleHours] | None
+    ) -> dict:
         """Calculate total hours and costs across all packages."""
         # Base totals
         base_presales_hours = sum(base_stage_hours.presales_hours.values())
@@ -312,21 +311,21 @@ class N2SEstimator:
             return
         for row in overrides:
             self.pricing.update_rate(
-                role=row['role'], 
+                role=row['role'],
                 locale=row['locale'],
-                onshore=float(row['onshore']), 
-                offshore=float(row['offshore']), 
+                onshore=float(row['onshore']),
+                offshore=float(row['offshore']),
                 partner=float(row['partner'])
             )
 
-    def apply_delivery_mix_overrides(self, global_mix: Optional[dict], role_overrides: list[dict]) -> None:
+    def apply_delivery_mix_overrides(self, global_mix: dict | None, role_overrides: list[dict]) -> None:
         """Apply delivery mix overrides to the pricing engine."""
         if not self.pricing:
             return
         if global_mix:
             self.pricing.update_global_delivery_mix(
-                float(global_mix['onshore_pct']), 
-                float(global_mix['offshore_pct']), 
+                float(global_mix['onshore_pct']),
+                float(global_mix['offshore_pct']),
                 float(global_mix['partner_pct'])
             )
         for row in role_overrides:

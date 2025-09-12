@@ -1,6 +1,5 @@
 """Pricing and role expansion engine for N2S Delivery Estimator."""
 
-from typing import Dict, Tuple, Optional
 
 from .datatypes import (
     ConfigurationData,
@@ -18,8 +17,8 @@ class PricingEngine:
     def __init__(self, config: ConfigurationData) -> None:
         """Initialize pricing engine with configuration data."""
         self.config = config
-        self._rate_cache: Dict[Tuple[str, str], RateCard] = {}
-        self._delivery_mix_cache: Dict[Optional[str], DeliveryMix] = {}
+        self._rate_cache: dict[tuple[str, str], RateCard] = {}
+        self._delivery_mix_cache: dict[str | None, DeliveryMix] = {}
         self._build_caches()
 
     def _build_caches(self) -> None:
@@ -39,7 +38,7 @@ class PricingEngine:
     ) -> list[RoleHours]:
         """
         Calculate role hours and costs for delivery hours only.
-        
+
         Pipeline:
         1. Explode delivery hours to roles via per-stage Role Mix
         2. Apply product role map (disable/multiply roles)
@@ -57,17 +56,17 @@ class PricingEngine:
 
             # Get roles for this stage
             stage_roles = self._get_stage_roles(stage)
-            
+
             # Calculate effective stage hours by removing disabled roles
             enabled_stage_roles = [role for role in stage_roles if role in enabled_roles]
             if not enabled_stage_roles:
                 continue  # No enabled roles for this stage
-                
+
             # Calculate total percentage of enabled roles
             enabled_pct = sum(self._get_role_percentage(stage, role) for role in enabled_stage_roles)
             if enabled_pct <= 0:
                 continue
-                
+
             # Scale down delivery hours proportionally for disabled roles
             effective_delivery_hours = delivery_hours * enabled_pct
 
@@ -131,7 +130,7 @@ class PricingEngine:
 
         # If no product role map, return all roles
         if not enabled_roles:
-            enabled_roles = list(set(rm.role for rm in self.config.role_mix))
+            enabled_roles = list({rm.role for rm in self.config.role_mix})
 
         return enabled_roles
 
@@ -264,11 +263,11 @@ class PricingEngine:
             role=role, onshore_pct=onshore_pct, offshore_pct=offshore_pct, partner_pct=partner_pct
         )
 
-    def get_effective_rates(self, locale: Optional[str] = None) -> list[RateCard]:
+    def get_effective_rates(self, locale: str | None = None) -> list[RateCard]:
         """Get effective rates for UI display."""
         if locale:
             # Return rates for specific locale, with US fallback
-            roles = sorted(set(rm.role for rm in self.config.role_mix))
+            roles = sorted({rm.role for rm in self.config.role_mix})
             out = []
             for role in roles:
                 # Prefer exact (role, locale), else fallback to US
@@ -282,9 +281,9 @@ class PricingEngine:
         """Get effective delivery mix for UI display."""
         return [
             DeliveryMix(
-                role=k, 
-                onshore_pct=v.onshore_pct, 
-                offshore_pct=v.offshore_pct, 
+                role=k,
+                onshore_pct=v.onshore_pct,
+                offshore_pct=v.offshore_pct,
                 partner_pct=v.partner_pct
             )
             for k, v in self._delivery_mix_cache.items()

@@ -19,7 +19,7 @@ class EstimationEngine:
         """
         # Step 1: Calculate adjusted base hours with product-specific multipliers
         size_multiplier = self.config.size_multipliers.get(inputs.size_band, 1.0)
-        
+
         # Get product-specific delivery type multiplier, fall back to global
         product_mult = (
             self.config.product_delivery_type_multipliers
@@ -40,7 +40,7 @@ class EstimationEngine:
 
         # Step 2: Build working weights dict and apply Sprint 0 uplift
         weights = {sw.stage: sw.weight for sw in self.config.stage_weights}
-        
+
         # Apply Sprint 0 uplift (absolute % of total)
         uplift = inputs.sprint0_uplift_pct if hasattr(inputs, 'sprint0_uplift_pct') else 0.0
         if uplift > 0:
@@ -58,7 +58,7 @@ class EstimationEngine:
                 total = sum(weights.values())
                 for k in weights:
                     weights[k] = weights[k] / total
-        
+
         # Allocate to stages using adjusted weights
         stage_hours_dict = {}
         for stage, weight in weights.items():
@@ -89,7 +89,7 @@ class EstimationEngine:
     def _calculate_presales_percentage(self, stage: str) -> float:
         """
         Calculate presales percentage for a stage.
-        
+
         If Activities sheet has multiple weighted activities with Is Presales flags for that stage,
         compute presales% = sum(weights of presales activities) / sum(all activity weights).
         Else fallback to Stages.Default Presales % for that stage.
@@ -138,7 +138,7 @@ class EstimationEngine:
 
         # If no product role map, return all roles from role mix
         if not enabled_roles:
-            enabled_roles = list(set(rm.role for rm in self.config.role_mix))
+            enabled_roles = list({rm.role for rm in self.config.role_mix})
 
         return enabled_roles
 

@@ -1,7 +1,6 @@
 """Add-on packages calculation engine for Integrations and Reports."""
 
 
-from typing import Dict, List, Optional, Tuple
 
 from .datatypes import (
     AddOnPackage,
@@ -20,7 +19,7 @@ class AddOnEngine:
         """Initialize add-on engine with configuration and pricing engine."""
         self.config = config
         self.pricing_engine = pricing_engine
-        self._package_cache: Dict[str, AddOnPackage] = {}
+        self._package_cache: dict[str, AddOnPackage] = {}
         self._build_cache()
 
     def _build_cache(self) -> None:
@@ -32,18 +31,18 @@ class AddOnEngine:
         self,
         package_name: str,
         count: int,
-        tier_mix: Optional[Dict[str, float]],
+        tier_mix: dict[str, float] | None,
         inputs: EstimationInputs,
-    ) -> Tuple[StageHours, List[RoleHours]]:
+    ) -> tuple[StageHours, list[RoleHours]]:
         """
         Generic add-on package calculation.
-        
+
         Args:
             package_name: Name of the package to calculate
             count: Number of items
             tier_mix: Mix percentages by tier name (None for single tier)
             inputs: Estimation inputs for size scaling
-            
+
         Returns:
             Tuple of (StageHours, List[RoleHours])
         """
@@ -56,20 +55,20 @@ class AddOnEngine:
 
         # Calculate total hours by tier
         tier_hours = {}
-        
+
         for tier in package.tiers:
             if tier_mix:
                 mix = tier_mix.get(tier.name, 0.0)
             else:
                 mix = 1.0  # Single tier case
-            
+
             hours = count * mix * tier.unit_hours
-            
+
             # Apply size scaling if enabled for this specific tier
             if tier.scale_by_size:
                 size_multiplier = self.config.size_multipliers.get(inputs.size_band, 1.0)
                 hours *= size_multiplier
-                
+
             tier_hours[tier.name] = hours
 
         # Apply product package multiplier
@@ -78,7 +77,7 @@ class AddOnEngine:
                 .get(inputs.product, {})
                 .get(package_name, 1.0)
         )
-        
+
         # Scale all tier hours by product package multiplier
         for tier_name in tier_hours:
             tier_hours[tier_name] *= pkg_mult
@@ -111,7 +110,7 @@ class AddOnEngine:
 
         return stage_hours, role_hours_list
 
-    def calculate_integrations(self, inputs: EstimationInputs) -> Tuple[StageHours, List[RoleHours]]:
+    def calculate_integrations(self, inputs: EstimationInputs) -> tuple[StageHours, list[RoleHours]]:
         """Calculate Integrations add-on package."""
         if not inputs.include_integrations:
             return self._empty_stage_hours(), []
@@ -129,7 +128,7 @@ class AddOnEngine:
             inputs=inputs
         )
 
-    def calculate_reports(self, inputs: EstimationInputs) -> Tuple[StageHours, List[RoleHours]]:
+    def calculate_reports(self, inputs: EstimationInputs) -> tuple[StageHours, list[RoleHours]]:
         """Calculate Reports add-on package."""
         if not inputs.include_reports:
             return self._empty_stage_hours(), []
@@ -147,12 +146,12 @@ class AddOnEngine:
             inputs=inputs
         )
 
-    def calculate_degreeworks(self, inputs: EstimationInputs) -> Tuple[StageHours, List[RoleHours]]:
+    def calculate_degreeworks(self, inputs: EstimationInputs) -> tuple[StageHours, list[RoleHours]]:
         """
         Calculate Degree Works as sum of:
         - Setup (size-scaled if the 'Setup' tier has scale_by_size=True)
         - PVEs by complexity tiers using calculator or direct PVE count.
-        
+
         Returns StageHours with two entries:
         'Degree Works – Setup' and 'Degree Works – PVEs'
         and combined RoleHours list for the DW package.
@@ -167,7 +166,7 @@ class AddOnEngine:
         # Calculate PVE count using calculator or direct input
         if inputs.degreeworks_use_pve_calculator:
             pve_count = (
-                inputs.degreeworks_majors + 
+                inputs.degreeworks_majors +
                 0.5 * (inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations)
             ) * inputs.degreeworks_catalog_years
         else:
@@ -182,12 +181,12 @@ class AddOnEngine:
             if tier.name.lower() == 'setup':
                 if inputs.degreeworks_include_setup:
                     setup_hours = 1 * tier.unit_hours  # Setup is always count=1
-                    
+
                     # Apply size scaling if enabled for Setup tier
                     if tier.scale_by_size:
                         size_multiplier = self.config.size_multipliers.get(inputs.size_band, 1.0)
                         setup_hours *= size_multiplier
-                    
+
                     # Distribute to roles
                     for role, role_pct in tier.role_distribution.items():
                         role_hours = setup_hours * role_pct
@@ -195,31 +194,30 @@ class AddOnEngine:
                             setup_hours_dict[role] += role_hours
                         else:
                             setup_hours_dict[role] = role_hours
-                    
+
                     stage_hours_dict['Degree Works – Setup'] = setup_hours
 
-            elif tier.name.lower().startswith('pve'):
-                if pve_count > 0:
-                    # Determine mix from inputs based on tier name
-                    if 'simple' in tier.name.lower():
-                        mix = inputs.degreeworks_simple_pct
-                    elif 'standard' in tier.name.lower():
-                        mix = inputs.degreeworks_standard_pct
-                    elif 'complex' in tier.name.lower():
-                        mix = inputs.degreeworks_complex_pct
-                    else:
-                        mix = 0.0  # Unknown tier
+            elif tier.name.lower().startswith('pve') and pve_count > 0:
+                # Determine mix from inputs based on tier name
+                if 'simple' in tier.name.lower():
+                    mix = inputs.degreeworks_simple_pct
+                elif 'standard' in tier.name.lower():
+                    mix = inputs.degreeworks_standard_pct
+                elif 'complex' in tier.name.lower():
+                    mix = inputs.degreeworks_complex_pct
+                else:
+                    mix = 0.0  # Unknown tier
 
-                    tier_total_hours = pve_count * mix * tier.unit_hours
-                    # Note: PVE tiers are NOT size-scaled per requirements
-                    
-                    # Distribute to roles
-                    for role, role_pct in tier.role_distribution.items():
-                        role_hours = tier_total_hours * role_pct
-                        if role in pve_hours_dict:
-                            pve_hours_dict[role] += role_hours
-                        else:
-                            pve_hours_dict[role] = role_hours
+                tier_total_hours = pve_count * mix * tier.unit_hours
+                # Note: PVE tiers are NOT size-scaled per requirements
+
+                # Distribute to roles
+                for role, role_pct in tier.role_distribution.items():
+                    role_hours = tier_total_hours * role_pct
+                    if role in pve_hours_dict:
+                        pve_hours_dict[role] += role_hours
+                    else:
+                        pve_hours_dict[role] = role_hours
 
         # Apply product package multiplier to all hours
         pkg_mult = (
@@ -227,17 +225,17 @@ class AddOnEngine:
                 .get(inputs.product, {})
                 .get('Degree Works', 1.0)
         )
-        
+
         # Scale setup hours
         for role in setup_hours_dict:
             setup_hours_dict[role] *= pkg_mult
         if 'Degree Works – Setup' in stage_hours_dict:
             stage_hours_dict['Degree Works – Setup'] *= pkg_mult
-        
+
         # Scale PVE hours
         for role in pve_hours_dict:
             pve_hours_dict[role] *= pkg_mult
-        
+
         # Calculate total PVE hours
         total_pve_hours = sum(pve_hours_dict.values())
         if total_pve_hours > 0:
@@ -273,7 +271,7 @@ class AddOnEngine:
         # Create StageHours with both Setup and PVEs
         total_setup_hours = stage_hours_dict.get('Degree Works – Setup', 0.0)
         total_pve_hours = stage_hours_dict.get('Degree Works – PVEs', 0.0)
-        
+
         stage_hours = StageHours(
             stage_hours=stage_hours_dict,
             presales_hours={
@@ -292,8 +290,8 @@ class AddOnEngine:
             if hours > 0:
                 # Use 'Degree Works' as stage name for pricing
                 role_hour = self._create_role_hours(
-                    {role: hours}, 
-                    'Degree Works', 
+                    {role: hours},
+                    'Degree Works',
                     inputs
                 )[0] if self._create_role_hours({role: hours}, 'Degree Works', inputs) else None
                 if role_hour:
@@ -397,23 +395,23 @@ class AddOnEngine:
             # Calculate PVE count
             if inputs.degreeworks_use_pve_calculator:
                 pve_count = (
-                    inputs.degreeworks_majors + 
+                    inputs.degreeworks_majors +
                     0.5 * (inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations)
                 ) * inputs.degreeworks_catalog_years
             else:
                 pve_count = inputs.degreeworks_pve_count
-            
+
             # Setup tier mix
             tier_mixes = {}
             if inputs.degreeworks_include_setup:
                 tier_mixes['Setup'] = 1.0  # Always 100% when included
-            
+
             # PVE tier mixes
             if pve_count > 0:
                 tier_mixes['PVE Simple'] = inputs.degreeworks_simple_pct
                 tier_mixes['PVE Standard'] = inputs.degreeworks_standard_pct
                 tier_mixes['PVE Complex'] = inputs.degreeworks_complex_pct
-            
+
             enabled = inputs.include_degreeworks
         else:
             return {}
@@ -431,7 +429,7 @@ class AddOnEngine:
         breakdown = {}
         for tier in package.tiers:
             tier_mix = tier_mixes.get(tier.name, 0.0)
-            
+
             if package_name == 'Degree Works':
                 # Special logic for Degree Works tiers
                 if tier.name.lower() == 'setup':
@@ -447,7 +445,7 @@ class AddOnEngine:
                 # Regular package logic
                 tier_count = count * tier_mix
                 tier_total_hours = tier_count * tier.unit_hours
-            
+
             # Apply per-tier size scaling
             if tier.scale_by_size:
                 size_multiplier = self.config.size_multipliers.get(inputs.size_band, 1.0)
@@ -465,7 +463,7 @@ class AddOnEngine:
     def validate_expected_addon_totals(self, inputs: EstimationInputs) -> dict[str, float]:
         """
         Validate add-on calculations against expected totals.
-        
+
         Expected with defaults:
         - Integrations (30; 60/30/10; 80/160/320): 3,840 hours
         - Reports (40; 50/35/15; 24/72/160): 2,448 hours

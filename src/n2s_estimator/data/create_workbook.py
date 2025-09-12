@@ -13,7 +13,7 @@ def create_workbook() -> None:
         # Role Aliases sheet - for canonicalization
         role_aliases_data = pd.DataFrame({
             'Alias': [
-                'Business Analyst', 'Platform Lead', 
+                'Business Analyst', 'Platform Lead',
                 'Integration Developer', 'Integration Consultant', 'Extensibility Developer',
                 'DW Scribe', 'Degree Works Scribe'
             ],
@@ -61,61 +61,61 @@ def create_workbook() -> None:
         role_mix_stages = []
         role_mix_roles = []
         role_mix_pcts = []
-        
+
         # Start - PM 0.20, SA 0.30, TA 0.05, FC 0.35 (was BA 0.15 + TL 0.25), QA 0.10
         for role, pct in [('Project Manager', 0.20), ('Solution Architect', 0.30), ('Technical Architect', 0.05), ('Functional Consultant', 0.35), ('QA Engineer', 0.10)]:
             role_mix_stages.append('Start')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-            
-        # Prepare - PM 0.15, SA 0.35, FC 0.45 (was BA 0.20 + TL 0.25), QA 0.05  
+
+        # Prepare - PM 0.15, SA 0.35, FC 0.45 (was BA 0.20 + TL 0.25), QA 0.05
         for role, pct in [('Project Manager', 0.15), ('Solution Architect', 0.35), ('Functional Consultant', 0.45), ('QA Engineer', 0.05)]:
             role_mix_stages.append('Prepare')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-            
+
         # Sprint 0 - PM 0.15, SA 0.25, FC 0.50 (was BA 0.15 + TL 0.35), QA 0.10
         for role, pct in [('Project Manager', 0.15), ('Solution Architect', 0.25), ('Functional Consultant', 0.50), ('QA Engineer', 0.10)]:
             role_mix_stages.append('Sprint 0')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-            
+
         # Plan - PM 0.25, SA 0.20, TA 0.05, FC 0.40 (was BA 0.15 + TL 0.30), QA 0.10
         for role, pct in [('Project Manager', 0.25), ('Solution Architect', 0.20), ('Technical Architect', 0.05), ('Functional Consultant', 0.40), ('QA Engineer', 0.10)]:
             role_mix_stages.append('Plan')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-            
-        # Configure - PM 0.10, SA 0.15, TA 0.28, FC 0.20, QA 0.10, IL 0.07, IE 0.06, EE 0.04 
+
+        # Configure - PM 0.10, SA 0.15, TA 0.28, FC 0.20, QA 0.10, IL 0.07, IE 0.06, EE 0.04
         for role, pct in [('Project Manager', 0.10), ('Solution Architect', 0.15), ('Technical Architect', 0.28), ('Functional Consultant', 0.20), ('QA Engineer', 0.10), ('Integration Lead', 0.07), ('Integration Engineer', 0.06), ('Extensibility Engineer', 0.04)]:
             role_mix_stages.append('Configure')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-            
+
         # Test - PM 0.15, SA 0.10, TA 0.04, FC 0.15, QA 0.40, IE 0.06, EE 0.10
         for role, pct in [('Project Manager', 0.15), ('Solution Architect', 0.10), ('Technical Architect', 0.04), ('Functional Consultant', 0.15), ('QA Engineer', 0.40), ('Integration Engineer', 0.06), ('Extensibility Engineer', 0.10)]:
             role_mix_stages.append('Test')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-            
+
         # Deploy - PM 0.20, SA 0.15, TA 0.06, FC 0.10, QA 0.20, IE 0.15, EE 0.14
         for role, pct in [('Project Manager', 0.20), ('Solution Architect', 0.15), ('Technical Architect', 0.06), ('Functional Consultant', 0.10), ('QA Engineer', 0.20), ('Integration Engineer', 0.15), ('Extensibility Engineer', 0.14)]:
             role_mix_stages.append('Deploy')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-            
+
         # Go-Live - PM 0.25, SA 0.20, FC 0.45 (was BA 0.15 + TL 0.30), QA 0.10
         for role, pct in [('Project Manager', 0.25), ('Solution Architect', 0.20), ('Functional Consultant', 0.45), ('QA Engineer', 0.10)]:
             role_mix_stages.append('Go-Live')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-            
+
         # Post Go-Live - PM 0.30, SA 0.25, FC 0.35 (was BA 0.15 + TL 0.20), QA 0.10
         for role, pct in [('Project Manager', 0.30), ('Solution Architect', 0.25), ('Functional Consultant', 0.35), ('QA Engineer', 0.10)]:
             role_mix_stages.append('Post Go-Live (Care)')
             role_mix_roles.append(role)
             role_mix_pcts.append(pct)
-        
+
         role_mix_data = pd.DataFrame({
             'Stage': role_mix_stages,
             'Role': role_mix_roles,
@@ -167,7 +167,7 @@ def create_workbook() -> None:
                 # Degree Works - Setup + PVE tiers
                 'Degree Works', 'Degree Works', 'Degree Works',  # Setup tier
                 'Degree Works', 'Degree Works', 'Degree Works',  # PVE Simple
-                'Degree Works', 'Degree Works', 'Degree Works',  # PVE Standard  
+                'Degree Works', 'Degree Works', 'Degree Works',  # PVE Standard
                 'Degree Works', 'Degree Works', 'Degree Works'   # PVE Complex
             ],
             'Tier': [
@@ -233,7 +233,7 @@ def create_workbook() -> None:
             'Scale By Size': [
                 # Integrations (unchanged - no scaling)
                 0, 0, 0, 0,
-                0, 0, 0, 0,  
+                0, 0, 0, 0,
                 0, 0, 0, 0,
                 # Reports (unchanged - no scaling)
                 0, 0, 0, 0,
@@ -265,8 +265,8 @@ def create_workbook() -> None:
         # Rates (Locales) sheet - expanded rate card with canonical roles
         locales = ['US', 'Canada', 'UK', 'EU', 'ANZ', 'MENA']
         roles = [
-            'Project Manager', 'Solution Architect', 
-            'Functional Consultant', 'QA Engineer', 'Integration Engineer', 
+            'Project Manager', 'Solution Architect',
+            'Functional Consultant', 'QA Engineer', 'Integration Engineer',
             'Technical Architect', 'Integration Lead', 'Reporting Consultant',
             'Extensibility Engineer', 'DegreeWorks Scribe'
         ]

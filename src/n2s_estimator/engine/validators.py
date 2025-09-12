@@ -63,7 +63,7 @@ class ConfigurationValidator:
 
     def validate_role_mix(self) -> None:
         """Validate that each stage's role mix sums to 1.0."""
-        stages = set(rm.stage for rm in self.config.role_mix)
+        stages = {rm.stage for rm in self.config.role_mix}
 
         for stage in stages:
             stage_roles = [rm for rm in self.config.role_mix if rm.stage == stage]
@@ -96,7 +96,7 @@ class ConfigurationValidator:
                         f"Add-on '{package.name}' tier '{tier.name}' role distribution "
                         f"sums to {total_pct:.3f}, should be 1.0"
                     )
-                
+
                 # Special validation for Degree Works
                 if package.name == 'Degree Works':
                     expected_tiers = {'Setup', 'PVE Simple', 'PVE Standard', 'PVE Complex'}
@@ -104,13 +104,13 @@ class ConfigurationValidator:
                         raise ValidationError(
                             f"Degree Works tier '{tier.name}' not in expected tiers: {expected_tiers}"
                         )
-                    
+
                     # Check that DegreeWorks Scribe is present and has significant allocation
                     if 'DegreeWorks Scribe' not in tier.role_distribution:
                         raise ValidationError(
                             f"Degree Works '{tier.name}' tier must include 'DegreeWorks Scribe' role"
                         )
-                    
+
                     dw_scribe_pct = tier.role_distribution['DegreeWorks Scribe']
                     if dw_scribe_pct < 0.4:  # Should be at least 40% (Complex tier is 50%)
                         raise ValidationError(
@@ -122,52 +122,52 @@ class ConfigurationValidator:
     def check_role_coverage(self) -> list[str]:
         """Check role coverage across configuration sheets and return warnings."""
         warnings = []
-        
+
         # Collect all roles referenced in the system
         all_roles = set()
-        
+
         # Roles from Role Mix
         role_mix_roles = {rm.role for rm in self.config.role_mix}
         all_roles.update(role_mix_roles)
-        
+
         # Roles from Add-on packages
         addon_roles = set()
         for package in self.config.addon_packages:
             for tier in package.tiers:
                 addon_roles.update(tier.role_distribution.keys())
         all_roles.update(addon_roles)
-        
+
         # Roles from Rates
         rates_roles = {rt.role for rt in self.config.rates}
-        
+
         # Roles from Product Role Map
         product_roles = {prm.role for prm in self.config.product_role_map}
-        
+
         # Check for roles missing from Rates (configuration integrity)
         missing_from_rates = all_roles - rates_roles
         if missing_from_rates:
             warnings.append(
                 f"Configuration warning: Roles missing from Rates sheet: {', '.join(sorted(missing_from_rates))}"
             )
-        
+
         # Check for roles missing from Product Role Map (configuration integrity)
         missing_from_product_map = all_roles - product_roles
         if missing_from_product_map:
             warnings.append(
                 f"Configuration warning: Roles missing from Product Role Map: {', '.join(sorted(missing_from_product_map))}"
             )
-        
+
         # Check stage role mix sums for minor deviations (configuration validation)
-        stages = set(rm.stage for rm in self.config.role_mix)
+        stages = {rm.stage for rm in self.config.role_mix}
         for stage in stages:
             stage_roles = [rm for rm in self.config.role_mix if rm.stage == stage]
             total_pct = sum(rm.pct for rm in stage_roles)
-            
+
             if abs(total_pct - 1.0) > 0.01:  # Warn for smaller deviations
                 warnings.append(
                     f"Configuration warning: Stage '{stage}' role mix sums to {total_pct:.3f}, should be 1.0 (will be auto-normalized)"
                 )
-        
+
         return warnings
 
     def check_methodology_drift(self, threshold: float = 0.10) -> list[str]:
@@ -251,23 +251,22 @@ def validate_estimation_inputs(inputs: 'EstimationInputs') -> list[str]:
         # Validate PVE count logic
         if inputs.degreeworks_use_pve_calculator:
             computed_pves = (
-                inputs.degreeworks_majors + 
+                inputs.degreeworks_majors +
                 0.5 * (inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations)
             ) * inputs.degreeworks_catalog_years
-            
+
             if computed_pves < 0:
                 warnings.append("Degree Works computed PVE count cannot be negative")
             elif computed_pves == 0 and not inputs.degreeworks_include_setup:
                 warnings.append("Degree Works has no Setup and 0 PVEs - nothing to calculate")
             elif computed_pves > 1000:
                 warnings.append(f"Degree Works computed PVE count ({computed_pves:.1f}) seems very high")
-        else:
-            if inputs.degreeworks_pve_count < 0:
-                warnings.append("Degree Works direct PVE count cannot be negative")
-            elif inputs.degreeworks_pve_count == 0 and not inputs.degreeworks_include_setup:
-                warnings.append("Degree Works has no Setup and 0 PVEs - nothing to calculate")
-            elif inputs.degreeworks_pve_count > 1000:
-                warnings.append(f"Degree Works direct PVE count ({inputs.degreeworks_pve_count}) seems very high")
+        elif inputs.degreeworks_pve_count < 0:
+            warnings.append("Degree Works direct PVE count cannot be negative")
+        elif inputs.degreeworks_pve_count == 0 and not inputs.degreeworks_include_setup:
+            warnings.append("Degree Works has no Setup and 0 PVEs - nothing to calculate")
+        elif inputs.degreeworks_pve_count > 1000:
+            warnings.append(f"Degree Works direct PVE count ({inputs.degreeworks_pve_count}) seems very high")
 
         # Check Degree Works cap warnings
         if inputs.include_degreeworks and hasattr(inputs, 'degreeworks_cap_enabled') and inputs.degreeworks_cap_enabled:
@@ -283,30 +282,30 @@ def validate_estimation_inputs(inputs: 'EstimationInputs') -> list[str]:
 def validate_product_package_multipliers(inputs: 'EstimationInputs', config: ConfigurationData) -> list[str]:
     """Validate product package multipliers and warn about disabled packages."""
     warnings = []
-    
+
     # Check if any enabled packages have zero multipliers (effectively disabled)
     if inputs.include_integrations:
         pkg_mult = config.product_package_multipliers.get(inputs.product, {}).get('Integrations', 1.0)
         if pkg_mult == 0.0:
             warnings.append(f"Integrations package is enabled but has 0.0x multiplier for {inputs.product} - no hours will be calculated")
-    
+
     if inputs.include_reports:
         pkg_mult = config.product_package_multipliers.get(inputs.product, {}).get('Reports', 1.0)
         if pkg_mult == 0.0:
             warnings.append(f"Reports package is enabled but has 0.0x multiplier for {inputs.product} - no hours will be calculated")
-    
+
     if inputs.include_degreeworks:
         pkg_mult = config.product_package_multipliers.get(inputs.product, {}).get('Degree Works', 1.0)
         if pkg_mult == 0.0:
             warnings.append(f"Degree Works package is enabled but has 0.0x multiplier for {inputs.product} - no hours will be calculated")
-    
+
     return warnings
 
 
 def validate_pricing_overrides(rate_overrides: list[dict], global_mix_override: dict, role_mix_overrides: list[dict]) -> list[str]:
     """Validate pricing overrides for rates and delivery mixes."""
     warnings = []
-    
+
     # Validate rate overrides
     for i, rate_override in enumerate(rate_overrides):
         if rate_override.get('onshore', 0) <= 0:
@@ -315,31 +314,31 @@ def validate_pricing_overrides(rate_overrides: list[dict], global_mix_override: 
             warnings.append(f"Rate override {i+1}: Offshore rate must be > 0")
         if rate_override.get('partner', 0) <= 0:
             warnings.append(f"Rate override {i+1}: Partner rate must be > 0")
-    
+
     # Validate global mix override
     if global_mix_override:
         onshore = global_mix_override.get('onshore_pct', 0)
         offshore = global_mix_override.get('offshore_pct', 0)
         partner = global_mix_override.get('partner_pct', 0)
         total = onshore + offshore + partner
-        
+
         if abs(total - 1.0) > 0.001:
             warnings.append(f"Global delivery mix must sum to 1.0, got {total:.3f}")
-        
+
         if onshore < 0 or offshore < 0 or partner < 0:
             warnings.append("Global delivery mix percentages must be >= 0")
-    
+
     # Validate role mix overrides
     for i, role_override in enumerate(role_mix_overrides):
         onshore = role_override.get('onshore_pct', 0)
         offshore = role_override.get('offshore_pct', 0)
         partner = role_override.get('partner_pct', 0)
         total = onshore + offshore + partner
-        
+
         if abs(total - 1.0) > 0.001:
             warnings.append(f"Role mix override {i+1} ({role_override.get('role', 'Unknown')}) must sum to 1.0, got {total:.3f}")
-        
+
         if onshore < 0 or offshore < 0 or partner < 0:
             warnings.append(f"Role mix override {i+1} ({role_override.get('role', 'Unknown')}) percentages must be >= 0")
-    
+
     return warnings

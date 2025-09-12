@@ -13,7 +13,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-from n2s_estimator.engine.datatypes import EstimationInputs, DeliveryMix
+from n2s_estimator.engine.datatypes import DeliveryMix, EstimationInputs
 from n2s_estimator.engine.orchestrator import N2SEstimator
 from n2s_estimator.engine.validators import validate_pricing_overrides
 from n2s_estimator.export.excel import ExcelExporter
@@ -216,68 +216,68 @@ def render_sidebar() -> EstimationInputs:
         if degreeworks_use_pve_calculator:
             st.sidebar.markdown("PVE Inputs:")
             degreeworks_majors = st.sidebar.number_input(
-                "Majors", 
-                min_value=0, 
-                value=getattr(st.session_state.inputs, "degreeworks_majors", 0), 
-                step=1, 
+                "Majors",
+                min_value=0,
+                value=getattr(st.session_state.inputs, "degreeworks_majors", 0),
+                step=1,
                 help="Number of distinct Majors to scribe at go-live."
             )
             degreeworks_minors = st.sidebar.number_input(
-                "Minors", 
-                min_value=0, 
-                value=getattr(st.session_state.inputs, "degreeworks_minors", 0), 
+                "Minors",
+                min_value=0,
+                value=getattr(st.session_state.inputs, "degreeworks_minors", 0),
                 step=1
             )
             degreeworks_certificates = st.sidebar.number_input(
-                "Certificates", 
-                min_value=0, 
-                value=getattr(st.session_state.inputs, "degreeworks_certificates", 0), 
+                "Certificates",
+                min_value=0,
+                value=getattr(st.session_state.inputs, "degreeworks_certificates", 0),
                 step=1
             )
             degreeworks_concentrations = st.sidebar.number_input(
-                "Concentrations", 
-                min_value=0, 
-                value=getattr(st.session_state.inputs, "degreeworks_concentrations", 0), 
+                "Concentrations",
+                min_value=0,
+                value=getattr(st.session_state.inputs, "degreeworks_concentrations", 0),
                 step=1
             )
             degreeworks_catalog_years = st.sidebar.number_input(
-                "Catalog Years", 
-                min_value=1, 
-                value=getattr(st.session_state.inputs, "degreeworks_catalog_years", 1), 
-                step=1, 
+                "Catalog Years",
+                min_value=1,
+                value=getattr(st.session_state.inputs, "degreeworks_catalog_years", 1),
+                step=1,
                 help="How many catalog years are included at go-live."
             )
             computed_pves = (degreeworks_majors + 0.5 * (degreeworks_minors + degreeworks_certificates + degreeworks_concentrations)) * degreeworks_catalog_years
             st.sidebar.info(f"Computed PVEs: **{computed_pves:.1f}**")
         else:
             degreeworks_pve_count = st.sidebar.number_input(
-                "Direct PVE Count", 
-                min_value=0, 
-                value=getattr(st.session_state.inputs, "degreeworks_pve_count", 0), 
-                step=1, 
+                "Direct PVE Count",
+                min_value=0,
+                value=getattr(st.session_state.inputs, "degreeworks_pve_count", 0),
+                step=1,
                 help="Override the calculator and specify total PVEs directly."
             )
 
         st.sidebar.markdown("PVE Complexity Mix:")
         dw_simple = st.sidebar.slider(
-            "Simple %", 
-            min_value=0.0, 
-            max_value=1.0, 
-            value=getattr(st.session_state.inputs, "degreeworks_simple_pct", 0.50), 
+            "Simple %",
+            min_value=0.0,
+            max_value=1.0,
+            value=getattr(st.session_state.inputs, "degreeworks_simple_pct", 0.50),
             step=0.05,
             key="dw_simple"
         )
         dw_standard = st.sidebar.slider(
-            "Standard %", 
-            min_value=0.0, 
-            max_value=1.0 - dw_simple, 
-            value=min(getattr(st.session_state.inputs, "degreeworks_standard_pct", 0.35), 1.0 - dw_simple), 
+            "Standard %",
+            min_value=0.0,
+            max_value=1.0 - dw_simple,
+            value=min(getattr(st.session_state.inputs, "degreeworks_standard_pct", 0.35), 1.0 - dw_simple),
             step=0.05,
             key="dw_standard"
         )
         dw_complex = 1.0 - dw_simple - dw_standard
         st.sidebar.write(f"Complex %: {dw_complex:.2%}")
-        
+
         # Degree Works cap controls
         degreeworks_cap_enabled = st.sidebar.checkbox(
             "Cap total Degree Works hours (recommended)",
@@ -310,11 +310,11 @@ def render_sidebar() -> EstimationInputs:
             value=st.session_state.inputs.maturity_factor,
             step=0.05
         )
-        
+
         # Sprint 0 uplift
         default_uplift = 0.02 if delivery_type == "Net New" else 0.01
         sprint0_uplift_pct = st.slider(
-            "Sprint 0 uplift (+% of total)", 0.0, 0.05, 
+            "Sprint 0 uplift (+% of total)", 0.0, 0.05,
             value=getattr(st.session_state.inputs, "sprint0_uplift_pct", default_uplift),
             step=0.005,
             help="Adds this absolute % of total hours to Sprint 0 and subtracts proportionally from Plan+Configure to keep Stage Weights at 100%."
@@ -367,24 +367,24 @@ def render_sidebar() -> EstimationInputs:
             try:
                 scenario_data = json.loads(uploaded_file.read())
                 st.session_state.inputs = EstimationInputs(**scenario_data)
-                
+
                 # Load pricing overrides if present
                 if 'scenario_overrides' in scenario_data:
                     overrides = scenario_data['scenario_overrides']
                     st.session_state.rate_overrides = overrides.get('rate_overrides', [])
                     st.session_state.global_mix_override = overrides.get('global_mix_override', None)
                     st.session_state.role_mix_overrides = overrides.get('role_mix_overrides', [])
-                    
+
                     # Apply overrides to estimator
                     estimator = load_estimator()
                     if st.session_state.rate_overrides:
                         estimator.apply_rate_overrides(st.session_state.rate_overrides)
                     if st.session_state.global_mix_override or st.session_state.role_mix_overrides:
                         estimator.apply_delivery_mix_overrides(
-                            st.session_state.global_mix_override, 
+                            st.session_state.global_mix_override,
                             st.session_state.role_mix_overrides
                         )
-                
+
                 st.rerun()
             except Exception as e:
                 st.error(f"Error loading scenario: {e}")
@@ -455,7 +455,7 @@ def render_summary_cards(estimator: N2SEstimator, results: 'EstimationResults') 
 
     with col4:
         blended_rate = (
-            results.total_cost / results.total_delivery_hours 
+            results.total_cost / results.total_delivery_hours
             if results.total_delivery_hours > 0 else 0
         )
         st.metric(
@@ -554,23 +554,23 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
 
     # Comprehensive Package Summary
     st.markdown("#### Package Summary")
-    
+
     # Calculate totals
     base_hours = sum(rh.total_hours for rh in results.base_role_hours)
     base_cost = sum(rh.total_cost for rh in results.base_role_hours)
-    
+
     integrations_hours = sum(rh.total_hours for rh in results.integrations_role_hours) if results.integrations_role_hours else 0
     integrations_cost = sum(rh.total_cost for rh in results.integrations_role_hours) if results.integrations_role_hours else 0
-    
+
     reports_hours = sum(rh.total_hours for rh in results.reports_role_hours) if results.reports_role_hours else 0
     reports_cost = sum(rh.total_cost for rh in results.reports_role_hours) if results.reports_role_hours else 0
-    
+
     degreeworks_hours = sum(rh.total_hours for rh in results.degreeworks_role_hours) if results.degreeworks_role_hours else 0
     degreeworks_cost = sum(rh.total_cost for rh in results.degreeworks_role_hours) if results.degreeworks_role_hours else 0
-    
+
     total_hours = base_hours + integrations_hours + reports_hours + degreeworks_hours
     total_cost = base_cost + integrations_cost + reports_cost + degreeworks_cost
-    
+
     # Create summary data
     summary_data = [
         {'Package': 'Base N2S', 'Hours': base_hours, 'Cost': base_cost},
@@ -579,11 +579,11 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
         {'Package': 'Degree Works', 'Hours': degreeworks_hours, 'Cost': degreeworks_cost},
         {'Package': '**TOTAL**', 'Hours': total_hours, 'Cost': total_cost}
     ]
-    
+
     summary_df = pd.DataFrame(summary_data)
     summary_df['Hours'] = summary_df['Hours'].round(1)
     summary_df['Cost'] = summary_df['Cost'].round(0)
-    
+
     st.dataframe(
         summary_df,
         width="stretch",
@@ -592,9 +592,9 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
             'Cost': st.column_config.NumberColumn(format="$%d")
         }
     )
-    
+
     st.markdown("---")
-    
+
     # Role Summary
     st.markdown("#### Role Summary")
     role_summary = estimator.get_role_summary(results)
@@ -755,7 +755,7 @@ def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults'
         st.markdown("#### Setup vs PVEs Breakdown")
         setup_hours = results.degreeworks_hours.stage_hours.get('Degree Works – Setup', 0)
         pve_hours = results.degreeworks_hours.stage_hours.get('Degree Works – PVEs', 0)
-        
+
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Setup Hours", f"{setup_hours:,.0f}", help="One-time setup and enablement (size-scaled)")
@@ -763,7 +763,7 @@ def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults'
             st.metric("PVE Hours", f"{pve_hours:,.0f}", help="Program-Version Equivalents scribing")
         with col3:
             st.metric("Total DW Hours", f"{setup_hours + pve_hours:,.0f}")
-            
+
         # Show cap information if enabled
         if inputs.degreeworks_cap_enabled:
             size_default_caps = {"Small": 300.0, "Medium": 400.0, "Large": 500.0, "Very Large": 600.0}
@@ -776,11 +776,11 @@ def render_degreeworks_tab(estimator: N2SEstimator, results: 'EstimationResults'
     if inputs.degreeworks_use_pve_calculator:
         st.markdown("#### PVE Calculator Summary")
         computed_pves = (
-            inputs.degreeworks_majors + 
+            inputs.degreeworks_majors +
             0.5 * (inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations)
         ) * inputs.degreeworks_catalog_years
-        
-        st.write(f"**Formula:** Majors + 0.5 × (Minors + Certificates + Concentrations) × Catalog Years")
+
+        st.write("**Formula:** Majors + 0.5 × (Minors + Certificates + Concentrations) × Catalog Years")
         st.write(f"**Calculation:** {inputs.degreeworks_majors} + 0.5 × ({inputs.degreeworks_minors} + {inputs.degreeworks_certificates} + {inputs.degreeworks_concentrations}) × {inputs.degreeworks_catalog_years} = **{computed_pves:.1f} PVEs**")
 
     # Tier breakdown
@@ -918,12 +918,12 @@ def render_charts_tab(estimator: N2SEstimator, results: 'EstimationResults') -> 
 def render_help_tab() -> None:
     """Render comprehensive help and documentation tab."""
     st.subheader("How this estimate is built")
-    
+
     # Pipeline explanation
     st.markdown("### 📋 Estimation Pipeline")
     st.markdown("""
     **10-Step Process:**
-    
+
     1. **Start from Base N2S baseline** (6,700h)
     2. **Apply Size & Delivery Type multipliers** (Small 0.85x, Medium 1.0x, Large 1.25x, Very Large 1.5x; Modernization 0.9x, Net New 1.0x)
     3. **Apply Product scaler** (Banner: 1.0x Net New, 0.9x Modernization; Colleague: 0.85x Net New, 0.75x Modernization)
@@ -937,83 +937,86 @@ def render_help_tab() -> None:
     11. **Subtotals by package** (Base N2S + enabled add-ons)
     12. **Export** a styled Excel workbook with all breakdowns
     """)
-    
+
     # Degree Works Setup explanation
     st.markdown("### 🏗️ Degree Works Setup (size-scaled)")
     st.info("""
     **One-time Setup & Enablement** (300h @ Medium, scaled by Size)
-    
+
     **Covers:**
     - Environment/config setup
-    - Integration with existing systems  
+    - Integration with existing systems
     - Training and documentation
     - Governance and workflows
     - Testing and validation
-    
+
     **Delivery only** (no presales component)
     """)
-    
-    # Degree Works PVEs explanation  
+
+    # Degree Works PVEs explanation
     st.markdown("### 📚 Degree Works PVEs (Program-Version Equivalents)")
     st.info("""
     **PVEs approximate** how many requirement blocks must be scribed at go-live:
-    
-    **Formula:** `PVEs = Majors + 0.5 × (Minors + Certificates + Concentrations) × Catalog Years`
-    
+
+    **Formula:** `PVEs = Majors + 0.5 x (Minors + Certificates + Concentrations) x Catalog Years`
+
     **Complexity tiers:**
     - **Simple** (24h): Straightforward degree requirements
     - **Standard** (48h): Moderate complexity with some conditional logic
     - **Complex** (96h): Advanced requirements with extensive rules
-    
+
     **You set the mix** based on your institution's catalog complexity.
-    
+
     **Delivery only** (no presales component)
     """)
-    
+
     # Degree Works cap explanation
     st.markdown("### 🛡️ Degree Works Cap (Size-based Guardrails)")
     st.info("""
-    **Degree Works totals are capped by size** (Small 300h, Medium 400h, Large 500h, Very Large 600h by default). 
+    **Degree Works totals are capped by size** (Small 300h, Medium 400h, Large 500h, Very Large 600h by default).
     We clamp PVEs after applying Setup so the overall DW estimate cannot exceed the cap.
-    
+
     **Cap Logic:**
     - Setup hours are always preserved (size-scaled)
     - PVEs are clamped if total would exceed cap
     - If Setup alone approaches cap, PVEs drop to near-zero
     - Cap can be overridden in Advanced Settings
     """)
-    
+
     # Product multipliers explanation
     st.markdown("### 🏢 Product Multipliers")
     st.info("""
     **Why Colleague estimates are lower by default:**
-    
-    Colleague implementations and modernizations at small–mid sized colleges often complete faster than large Banner programs 
-    (e.g., SMC's Colleague SaaS modernization in ~9 months), while multi‑campus Banner ERP programs can span years with higher complexity. 
-    Our estimator reflects that by applying product‑specific multipliers and by disabling Technical Architect for Colleague.
-    
+
+    Colleague implementations and modernizations at small-mid sized colleges often complete faster than large Banner programs
+    (e.g., SMC's Colleague SaaS modernization in ~9 months), while multi-campus Banner ERP programs can span years with higher complexity.
+    Our estimator reflects that by applying product-specific multipliers and by disabling Technical Architect for Colleague.
+
     **Sources:** SMC modernization (9 months); CCCS Banner program (5 years, $26M).
     """)
-    
+
     # Product multiplier tables
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        st.markdown("#### Product × Delivery Type Multipliers")
+        st.markdown("#### Product x Delivery Type Multipliers")
         st.dataframe({
             'Product': ['Banner', 'Banner', 'Colleague', 'Colleague'],
             'Delivery Type': ['Net New', 'Modernization', 'Net New', 'Modernization'],
             'Multiplier': ['1.00x', '0.90x', '0.85x', '0.75x']
-        }, use_container_width=True)
-    
+        }, width='stretch')
+
     with col2:
-        st.markdown("#### Product × Package Multipliers")
+        st.markdown("#### Product x Package Multipliers")
         st.dataframe({
             'Product': ['Banner', 'Banner', 'Banner', 'Colleague', 'Colleague', 'Colleague'],
-            'Package': ['Integrations', 'Reports', 'Degree Works', 'Integrations', 'Reports', 'Degree Works'],
+            'Package': [
+                'Integrations', 'Reports', 'Degree Works',
+                'Integrations', 'Reports', 'Degree Works'
+            ],
             'Multiplier': ['1.00x', '1.00x', '1.00x', '0.90x', '0.90x', '0.00x']
-        }, use_container_width=True)
-    
+        }, width='stretch')
+
     # Important notes
     st.markdown("### ⚠️ Notes & Guardrails")
     st.warning("""
@@ -1026,18 +1029,18 @@ def render_help_tab() -> None:
     - **Stage Summary toggle** shows base-only vs all-packages view
     - **Sprint 0 uplift** adds configurable % to Sprint 0, subtracts from Plan+Configure
     """)
-    
+
     # Role distribution details
     st.markdown("### 👥 Role Distributions")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("**Setup & PVE Simple:**")
         st.write("- DegreeWorks Scribe: 70%")
-        st.write("- Functional Consultant: 20%") 
+        st.write("- Functional Consultant: 20%")
         st.write("- Technical Architect: 10%")
-    
+
     with col2:
         st.markdown("**PVE Standard & Complex:**")
         st.write("- **Standard:** DWS 60%, FC 25%, TA 15%")
@@ -1045,7 +1048,7 @@ def render_help_tab() -> None:
         st.write("- *(More complex = more consulting/architecture)*")
 
 
-def render_assumptions_tab(results: 'EstimationResults', estimator: 'N2SEstimator') -> None:
+def render_assumptions_tab(results, estimator) -> None:
     """Render assumptions and inputs summary."""
     st.subheader("Assumptions & Inputs")
 
@@ -1060,7 +1063,7 @@ def render_assumptions_tab(results: 'EstimationResults', estimator: 'N2SEstimato
         st.write(f"**Size Band:** {inputs.size_band}")
         st.write(f"**Locale:** {inputs.locale}")
         st.write(f"**Maturity Factor:** {inputs.maturity_factor:.2f}")
-        
+
         st.markdown("#### Applied Multipliers")
         # Product delivery type multiplier
         product_mult = (
@@ -1068,23 +1071,29 @@ def render_assumptions_tab(results: 'EstimationResults', estimator: 'N2SEstimato
                 .get(inputs.product, {})
                 .get(inputs.delivery_type, 1.0)
         )
-        st.write(f"**Product × Delivery Type:** {product_mult:.2f}x")
-        
+        st.write(f"**Product x Delivery Type:** {product_mult:.2f}x")
+
         # Size multiplier
         size_mult = estimator.config.size_multipliers.get(inputs.size_band, 1.0)
         st.write(f"**Size Band:** {size_mult:.2f}x")
-        
+
         # Package multipliers for enabled add-ons
         if inputs.include_integrations or inputs.include_reports or inputs.include_degreeworks:
             st.write("**Package Multipliers:**")
             if inputs.include_integrations:
-                pkg_mult = estimator.config.product_package_multipliers.get(inputs.product, {}).get('Integrations', 1.0)
+                pkg_mult = estimator.config.product_package_multipliers.get(
+                    inputs.product, {}
+                ).get('Integrations', 1.0)
                 st.write(f"  - Integrations: {pkg_mult:.2f}x")
             if inputs.include_reports:
-                pkg_mult = estimator.config.product_package_multipliers.get(inputs.product, {}).get('Reports', 1.0)
+                pkg_mult = estimator.config.product_package_multipliers.get(
+                    inputs.product, {}
+                ).get('Reports', 1.0)
                 st.write(f"  - Reports: {pkg_mult:.2f}x")
             if inputs.include_degreeworks:
-                pkg_mult = estimator.config.product_package_multipliers.get(inputs.product, {}).get('Degree Works', 1.0)
+                pkg_mult = estimator.config.product_package_multipliers.get(
+                    inputs.product, {}
+                ).get('Degree Works', 1.0)
                 st.write(f"  - Degree Works: {pkg_mult:.2f}x")
 
     with col2:
@@ -1109,17 +1118,30 @@ def render_assumptions_tab(results: 'EstimationResults', estimator: 'N2SEstimato
         if inputs.include_degreeworks:
             st.write("**Degree Works:**")
             if inputs.degreeworks_include_setup:
-                st.write(f"  - Setup: 300h @ Medium (size-scaled)")
+                st.write("  - Setup: 300h @ Medium (size-scaled)")
             if inputs.degreeworks_use_pve_calculator:
                 computed_pves = (
-                    inputs.degreeworks_majors + 
-                    0.5 * (inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations)
+                    inputs.degreeworks_majors +
+                    0.5 * (
+                        inputs.degreeworks_minors +
+                        inputs.degreeworks_certificates +
+                        inputs.degreeworks_concentrations
+                    )
                 ) * inputs.degreeworks_catalog_years
                 st.write(f"  - PVEs: {computed_pves:.1f} (calculated)")
-                st.write(f"    • Majors: {inputs.degreeworks_majors}, Others: {inputs.degreeworks_minors + inputs.degreeworks_certificates + inputs.degreeworks_concentrations}")
+                others = (
+                    inputs.degreeworks_minors +
+                    inputs.degreeworks_certificates +
+                    inputs.degreeworks_concentrations
+                )
+                st.write(f"    • Majors: {inputs.degreeworks_majors}, Others: {others}")
             else:
                 st.write(f"  - PVEs: {inputs.degreeworks_pve_count} (direct)")
-            st.write(f"  - PVE Mix: Simple {inputs.degreeworks_simple_pct:.1%}, Standard {inputs.degreeworks_standard_pct:.1%}, Complex {inputs.degreeworks_complex_pct:.1%}")
+            st.write(
+                f"  - PVE Mix: Simple {inputs.degreeworks_simple_pct:.1%}, "
+                f"Standard {inputs.degreeworks_standard_pct:.1%}, "
+                f"Complex {inputs.degreeworks_complex_pct:.1%}"
+            )
         else:
             st.write("**Degree Works:** Disabled")
 
@@ -1139,14 +1161,14 @@ def render_assumptions_tab(results: 'EstimationResults', estimator: 'N2SEstimato
 def render_rates_tab(estimator: N2SEstimator) -> None:
     """Render Rates & Mixes editor tab."""
     st.subheader("Rates & Mixes")
-    
+
     # Show validation warnings for current overrides
     pricing_warnings = validate_pricing_overrides(
         st.session_state.rate_overrides,
         st.session_state.global_mix_override,
         st.session_state.role_mix_overrides
     )
-    
+
     if pricing_warnings:
         with st.expander("⚠️ Pricing Override Warnings", expanded=True):
             for warning in pricing_warnings:
@@ -1161,20 +1183,21 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
         # Start with effective current global or defaults
         eff_mix = estimator.pricing._delivery_mix_cache.get(None) if estimator.pricing else None
         g_on = st.number_input(
-            "Onshore %", 
-            min_value=0.0, 
+            "Onshore %",
+            min_value=0.0,
             max_value=1.0,
-            value=(eff_mix.onshore_pct if eff_mix else 0.70), 
-            step=0.05, 
+            value=(eff_mix.onshore_pct if eff_mix else 0.70),
+            step=0.05,
             key="g_on",
-            help="Sets the default Onshore/Offshore/Partner percentages for all roles not explicitly overridden. Must total 100%."
+            help="Sets the default Onshore/Offshore/Partner percentages for all roles "
+                 "not explicitly overridden. Must total 100%."
         )
         g_off = st.number_input(
-            "Offshore %", 
-            min_value=0.0, 
+            "Offshore %",
+            min_value=0.0,
             max_value=1.0,
-            value=(eff_mix.offshore_pct if eff_mix else 0.20), 
-            step=0.05, 
+            value=(eff_mix.offshore_pct if eff_mix else 0.20),
+            step=0.05,
             key="g_off"
         )
         g_pa = 1.0 - g_on - g_off
@@ -1183,25 +1206,27 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
             st.error("Global mix must sum to 1.0")
         if st.button("Apply Global Mix"):
             st.session_state.global_mix_override = {
-                'onshore_pct': g_on, 
-                'offshore_pct': g_off, 
+                'onshore_pct': g_on,
+                'offshore_pct': g_off,
                 'partner_pct': g_pa
             }
             estimator.apply_delivery_mix_overrides(st.session_state.global_mix_override, [])
             st.success("Global delivery mix applied.")
 
     with col_r:
-        st.markdown("**Per‑Role Delivery Overrides**")
+        st.markdown("**Per-Role Delivery Overrides**")
         # Build a frame of effective per-role mix for enabled roles
         if estimator.pricing:
-            roles = sorted(set(rm.role for rm in estimator.config.role_mix))
+            roles = sorted({rm.role for rm in estimator.config.role_mix})
             rows = []
             for role in roles:
                 dm = estimator.pricing._delivery_mix_cache.get(role)
                 if not dm:
                     # show global values for reference
                     base = estimator.pricing._delivery_mix_cache.get(None)
-                    dm = base or DeliveryMix(role=role, onshore_pct=0.70, offshore_pct=0.20, partner_pct=0.10)
+                    dm = base or DeliveryMix(
+                        role=role, onshore_pct=0.70, offshore_pct=0.20, partner_pct=0.10
+                    )
                 rows.append({
                     'Role': role,
                     'Onshore %': round(dm.onshore_pct, 3),
@@ -1215,7 +1240,7 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
                 key="mix_editor"
             )
             st.caption("Overrides the global split for selected roles. Each row must total 100%.")
-            if st.button("Apply Per‑Role Mix"):
+            if st.button("Apply Per-Role Mix"):
                 overrides = []
                 for _, r in df_mix.iterrows():
                     total = float(r['Onshore %']) + float(r['Offshore %']) + float(r['Partner %'])
@@ -1230,7 +1255,7 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
                     })
                 st.session_state.role_mix_overrides = overrides
                 estimator.apply_delivery_mix_overrides(None, overrides)
-                st.success("Per‑role delivery overrides applied.")
+                st.success("Per-role delivery overrides applied.")
 
     st.markdown("---")
 
@@ -1239,8 +1264,14 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
     col_l, col_a = st.columns([1, 3])
 
     with col_l:
-        locale_selector = st.selectbox("Locale to edit", ["US", "Canada", "UK", "EU", "ANZ", "MENA"], index=0)
-        show_all = st.checkbox("Show all locales table", value=False, help="If unchecked, edits the selected locale only.")
+        locale_selector = st.selectbox(
+            "Locale to edit", ["US", "Canada", "UK", "EU", "ANZ", "MENA"], index=0
+        )
+        show_all = st.checkbox(
+            "Show all locales table",
+            value=False,
+            help="If unchecked, edits the selected locale only."
+        )
         st.info("Tip: Hours are unaffected by locale; rates change cost only.")
 
     # Build editable DataFrame of rates
@@ -1248,19 +1279,19 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
         if show_all:
             rc_list = estimator.pricing.get_effective_rates(locale=None)
             data = [{
-                'Role': rc.role, 
+                'Role': rc.role,
                 'Locale': rc.locale,
-                'Onshore Rate': rc.onshore, 
-                'Offshore Rate': rc.offshore, 
+                'Onshore Rate': rc.onshore,
+                'Offshore Rate': rc.offshore,
                 'Partner Rate': rc.partner
             } for rc in rc_list]
         else:
             rc_list = estimator.pricing.get_effective_rates(locale=locale_selector)
             data = [{
-                'Role': rc.role, 
+                'Role': rc.role,
                 'Locale': locale_selector,
-                'Onshore Rate': rc.onshore, 
-                'Offshore Rate': rc.offshore, 
+                'Onshore Rate': rc.onshore,
+                'Offshore Rate': rc.offshore,
                 'Partner Rate': rc.partner
             } for rc in rc_list]
 
@@ -1270,12 +1301,21 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
             num_rows="dynamic",
             key="rates_editor",
             column_config={
-                'Onshore Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
-                'Offshore Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
-                'Partner Rate': st.column_config.NumberColumn(min_value=0.01, step=5.0, format="$%.2f"),
+                'Onshore Rate': st.column_config.NumberColumn(
+                    min_value=0.01, step=5.0, format="$%.2f"
+                ),
+                'Offshore Rate': st.column_config.NumberColumn(
+                    min_value=0.01, step=5.0, format="$%.2f"
+                ),
+                'Partner Rate': st.column_config.NumberColumn(
+                    min_value=0.01, step=5.0, format="$%.2f"
+                ),
             }
         )
-        st.caption("Rates are per role and locale. Editing here updates this scenario only. Hours do not change with locale; costs do.")
+        st.caption(
+            "Rates are per role and locale. Editing here updates this scenario only. "
+            "Hours do not change with locale; costs do."
+        )
 
         c1, c2, c3 = st.columns([1,1,1])
         with c1:
@@ -1297,12 +1337,15 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
                 estimator.apply_rate_overrides(overrides)
                 st.success("Rates applied.")
         with c2:
-            if st.button("Reset to Workbook Defaults", help="Discard all runtime pricing overrides and reload workbook rates & mixes."):
+            if st.button(
+                "Reset to Workbook Defaults",
+                help="Discard all runtime pricing overrides and reload workbook rates & mixes."
+            ):
                 estimator.reset_pricing_overrides()
                 st.session_state.rate_overrides = []
                 st.session_state.global_mix_override = None
                 st.session_state.role_mix_overrides = []
-                st.info("Pricing reset to workbook values. Re‑run estimation if needed.")
+                st.info("Pricing reset to workbook values. Re-run estimation if needed.")
         with c3:
             if st.button("Recalculate with Current Pricing"):
                 st.rerun()
@@ -1326,7 +1369,7 @@ def main() -> None:
     inputs_changed = False
     if hasattr(st.session_state, 'inputs'):
         old_inputs = st.session_state.inputs
-        if (inputs.product != old_inputs.product or 
+        if (inputs.product != old_inputs.product or
             inputs.delivery_type != old_inputs.delivery_type or
             inputs.size_band != old_inputs.size_band or
             inputs.locale != old_inputs.locale or
@@ -1365,7 +1408,8 @@ def main() -> None:
 
     # Tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-        "Base N2S", "Integrations", "Reports", "Degree Works", "Charts", "How this estimate is built", "Assumptions", "Rates & Mixes"
+        "Base N2S", "Integrations", "Reports", "Degree Works", "Charts",
+        "How this estimate is built", "Assumptions", "Rates & Mixes"
     ])
 
     with tab1:
@@ -1402,7 +1446,8 @@ def main() -> None:
                 exporter = ExcelExporter()
                 excel_data = exporter.export_to_excel(results, estimator)
 
-                filename = f"N2S_Estimate_{inputs.product}_{pd.Timestamp.now().strftime('%Y%m%d')}.xlsx"
+                timestamp = pd.Timestamp.now().strftime('%Y%m%d')
+                filename = f"N2S_Estimate_{inputs.product}_{timestamp}.xlsx"
 
                 st.download_button(
                     label="Download Excel File",

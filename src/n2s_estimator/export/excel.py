@@ -23,7 +23,7 @@ class ExcelExporter:
     def export_to_excel(self, results: EstimationResults, estimator: N2SEstimator) -> bytes:
         """
         Export estimation results to Excel workbook.
-        
+
         Returns bytes of the Excel file for download.
         """
         # Create in-memory buffer
@@ -385,14 +385,14 @@ class ExcelExporter:
 
         # Get effective delivery mixes using new API
         effective_mixes = estimator.pricing.get_effective_delivery_mix()
-        
+
         # Global mix (role=None)
         global_mix = None
         for mix in effective_mixes:
             if mix.role is None:
                 global_mix = mix
                 break
-        
+
         if global_mix:
             worksheet.write(row, 0, 'Global (Default)')
             worksheet.write(row, 1, global_mix.onshore_pct, self.formats['percent'])

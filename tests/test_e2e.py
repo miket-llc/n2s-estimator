@@ -117,7 +117,7 @@ class TestEndToEnd:
         assert results.total_cost > 0
 
         # Get enabled roles
-        colleague_roles = set(rh.role for rh in results.base_role_hours)
+        colleague_roles = {rh.role for rh in results.base_role_hours}
 
         # Should have some roles enabled
         assert len(colleague_roles) > 0
@@ -125,7 +125,7 @@ class TestEndToEnd:
         # Compare with Banner to see differences
         banner_inputs = inputs.model_copy(update={'product': 'Banner'})
         banner_results = estimator.estimate(banner_inputs)
-        banner_roles = set(rh.role for rh in banner_results.base_role_hours)
+        banner_roles = {rh.role for rh in banner_results.base_role_hours}
 
         # Should have some common roles
         common_roles = colleague_roles & banner_roles
@@ -146,7 +146,7 @@ class TestEndToEnd:
         sizes = ["Small", "Medium", "Large", "Very Large"]
         size_multipliers = [0.85, 1.00, 1.25, 1.50]
 
-        for size, multiplier in zip(sizes, size_multipliers):
+        for size, multiplier in zip(sizes, size_multipliers, strict=False):
             inputs = base_inputs.model_copy(update={'size_band': size})
             results = estimator.estimate(inputs)
 
@@ -159,7 +159,7 @@ class TestEndToEnd:
         delivery_types = ["Net New", "Modernization"]
         delivery_multipliers = [1.00, 0.90]
 
-        for delivery_type, multiplier in zip(delivery_types, delivery_multipliers):
+        for delivery_type, multiplier in zip(delivery_types, delivery_multipliers, strict=False):
             inputs = base_inputs.model_copy(update={'delivery_type': delivery_type})
             results = estimator.estimate(inputs)
 
@@ -463,12 +463,12 @@ class TestEndToEnd:
         """Test that new features are compatible with UI expectations."""
         # Test that all new fields have sensible defaults
         inputs = EstimationInputs()
-        
+
         # New fields should have defaults
         assert hasattr(inputs, 'sprint0_uplift_pct')
         assert hasattr(inputs, 'degreeworks_cap_enabled')
         assert hasattr(inputs, 'degreeworks_cap_hours')
-        
+
         # Defaults should be reasonable
         assert 0.0 <= inputs.sprint0_uplift_pct <= 0.05
         assert isinstance(inputs.degreeworks_cap_enabled, bool)

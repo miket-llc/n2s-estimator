@@ -56,7 +56,7 @@ class TestConfigurationLoader:
 
     def test_role_mix_sums_to_one(self, config):
         """Test that each stage's role mix sums to 1.0."""
-        stages = set(rm.stage for rm in config.role_mix)
+        stages = {rm.stage for rm in config.role_mix}
 
         for stage in stages:
             stage_roles = [rm for rm in config.role_mix if rm.stage == stage]
@@ -98,7 +98,7 @@ class TestConfigurationLoader:
         # Check tier structure per package
         for package in config.addon_packages:
             tier_names = [t.name for t in package.tiers]
-            
+
             if package.name in ['Integrations', 'Reports']:
                 expected_tiers = ['Simple', 'Standard', 'Complex']
                 for expected_tier in expected_tiers:

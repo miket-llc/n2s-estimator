@@ -1,7 +1,6 @@
 """Data loader for N2S Estimator configuration from Excel workbook."""
 
 from pathlib import Path
-from typing import Dict, Union
 
 import pandas as pd
 
@@ -26,8 +25,8 @@ class ConfigurationLoader:
     def __init__(self, workbook_path: Path) -> None:
         """Initialize loader with workbook path."""
         self.workbook_path = workbook_path
-        self._sheets: Dict[str, pd.DataFrame] = {}
-        self._role_aliases: Dict[str, str] = {}
+        self._sheets: dict[str, pd.DataFrame] = {}
+        self._role_aliases: dict[str, str] = {}
 
     def load_configuration(self) -> ConfigurationData:
         """Load complete configuration from workbook."""
@@ -73,7 +72,7 @@ class ConfigurationLoader:
         """Load role aliases for canonicalization."""
         if 'Role Aliases' not in self._sheets:
             return  # No aliases sheet, skip
-            
+
         df = self._sheets['Role Aliases']
         for _, row in df.iterrows():
             alias = row['Alias']
@@ -82,7 +81,7 @@ class ConfigurationLoader:
 
     def _get_role_aliases_list(self) -> list:
         """Convert role aliases dict to list of RoleAlias objects."""
-        return [RoleAlias(alias=alias, canonical_role=canonical) 
+        return [RoleAlias(alias=alias, canonical_role=canonical)
                 for alias, canonical in self._role_aliases.items()]
 
     def _load_baseline_hours(self) -> float:
@@ -164,7 +163,7 @@ class ConfigurationLoader:
             ))
 
         # Validate each stage's role mix sums to 1.0
-        stages = set(rm.stage for rm in role_mix)
+        stages = {rm.stage for rm in role_mix}
         for stage in stages:
             stage_roles = [rm for rm in role_mix if rm.stage == stage]
             total_pct = sum(rm.pct for rm in stage_roles)
@@ -230,7 +229,7 @@ class ConfigurationLoader:
             return []
 
         df = self._sheets['Add-On Catalog']
-        packages_dict: Dict[str, Dict[str, Dict[str, Union[float, Dict[str, float]]]]] = {}
+        packages_dict: dict[str, dict[str, dict[str, float | dict[str, float]]]] = {}
 
         # Group by package and tier
         for _, row in df.iterrows():
@@ -259,13 +258,13 @@ class ConfigurationLoader:
         packages = []
         for package_name, package_data in packages_dict.items():
             tiers = []
-            
+
             for tier_name, tier_data in package_data['tiers'].items():
                 unit_hours = tier_data['unit_hours']
                 role_dist = tier_data['role_distribution']
                 tier_scale_by_size = tier_data.get('scale_by_size', False)
-                
-                if isinstance(unit_hours, (int, float)) and isinstance(role_dist, dict):
+
+                if isinstance(unit_hours, int | float) and isinstance(role_dist, dict):
                     tiers.append(AddOnTier(
                         name=tier_name,
                         unit_hours=float(unit_hours),
@@ -275,7 +274,7 @@ class ConfigurationLoader:
 
             # Keep package-level flag for backward compatibility (any tier scales)
             package_scale_by_size = any(tier_data.get('scale_by_size', False) for tier_data in package_data['tiers'].values())
-            
+
             packages.append(AddOnPackage(
                 name=package_name,
                 scale_by_size=package_scale_by_size,
@@ -302,7 +301,7 @@ class ConfigurationLoader:
 
         return role_map
 
-    def _load_addon_caps(self) -> Dict[str, Dict[str, float]]:
+    def _load_addon_caps(self) -> dict[str, dict[str, float]]:
         """Load add-on caps from Inputs sheet or dedicated Add-On Caps sheet."""
         # Default caps
         default_caps = {
@@ -313,28 +312,28 @@ class ConfigurationLoader:
                 "Very Large": 600.0
             }
         }
-        
+
         # Try dedicated Add-On Caps sheet first
         if 'Add-On Caps' in self._sheets:
             df = self._sheets['Add-On Caps']
             caps = {}
-            
+
             for _, row in df.iterrows():
                 addon_name = row['Add-On']
                 size_band = row['Size Band']
                 cap_hours = float(row['Cap Hours'])
-                
+
                 if addon_name not in caps:
                     caps[addon_name] = {}
                 caps[addon_name][size_band] = cap_hours
-            
+
             return caps
-        
+
         # Try Inputs sheet for Degree Works caps
         if 'Inputs' in self._sheets:
             inputs_df = self._sheets['Inputs']
             caps = default_caps.copy()
-            
+
             # Look for Degree Works Cap rows
             for _, row in inputs_df.iterrows():
                 param = str(row['Parameter']).strip()
@@ -345,18 +344,18 @@ class ConfigurationLoader:
                         caps['Degree Works'][size_band] = cap_hours
                     except (ValueError, IndexError):
                         continue
-            
+
             return caps
-        
+
         return default_caps
 
-    def _load_product_multipliers(self) -> Dict[str, Dict[str, float]]:
+    def _load_product_multipliers(self) -> dict[str, dict[str, float]]:
         """Load product delivery type multipliers from workbook."""
         default_multipliers = {
             "Banner": {"Net New": 1.00, "Modernization": 0.90},
             "Colleague": {"Net New": 0.85, "Modernization": 0.75}
         }
-        
+
         if 'Product Multipliers' in self._sheets:
             multipliers = {}
             df = self._sheets['Product Multipliers']
@@ -364,22 +363,22 @@ class ConfigurationLoader:
                 product = row['Product']
                 delivery_type = row['Delivery Type']
                 multiplier = float(row['Multiplier'])
-                
+
                 if product not in multipliers:
                     multipliers[product] = {}
                 multipliers[product][delivery_type] = multiplier
-            
+
             return multipliers
-        
+
         return default_multipliers
 
-    def _load_product_package_multipliers(self) -> Dict[str, Dict[str, float]]:
+    def _load_product_package_multipliers(self) -> dict[str, dict[str, float]]:
         """Load product package multipliers from workbook."""
         default_multipliers = {
             "Banner": {"Integrations": 1.00, "Reports": 1.00, "Degree Works": 1.00},
             "Colleague": {"Integrations": 0.90, "Reports": 0.90, "Degree Works": 0.00}
         }
-        
+
         if 'Product Package Multipliers' in self._sheets:
             multipliers = {}
             df = self._sheets['Product Package Multipliers']
@@ -387,22 +386,22 @@ class ConfigurationLoader:
                 product = row['Product']
                 package = row['Package']
                 multiplier = float(row['Multiplier'])
-                
+
                 if product not in multipliers:
                     multipliers[product] = {}
                 multipliers[product][package] = multiplier
-            
+
             return multipliers
-        
+
         return default_multipliers
 
-    def _load_product_notes(self) -> Dict[str, str]:
+    def _load_product_notes(self) -> dict[str, str]:
         """Load product notes from workbook."""
         default_notes = {
             "Banner": "Large, multi-campus Banner deployments are complex & long (e.g., CCCS: 13 colleges, 5 years, $26M)",
             "Colleague": "Colleague implementations at small-mid sized colleges often complete faster (e.g., SMC modernization: ~9 months)"
         }
-        
+
         if 'Product Package Multipliers' in self._sheets:
             notes = {}
             df = self._sheets['Product Package Multipliers']
@@ -410,12 +409,12 @@ class ConfigurationLoader:
                 product = row['Product']
                 if 'Notes' in row and pd.notna(row['Notes']):
                     notes[product] = str(row['Notes'])
-            
+
             # Merge with defaults for any missing products
             for product, note in default_notes.items():
                 if product not in notes:
                     notes[product] = note
-            
+
             return notes
-        
+
         return default_notes
