@@ -1408,6 +1408,49 @@ def render_rates_tab(estimator: N2SEstimator) -> None:
                 st.rerun()
 
 
+def render_user_guide_tab() -> None:
+    """Render User Guide tab with comprehensive documentation."""
+    st.subheader("📚 User Guide")
+    
+    # Load and display the user guide content
+    try:
+        guide_path = Path(__file__).parent.parent.parent / "docs" / "USER_GUIDE.md"
+        with open(guide_path, 'r', encoding='utf-8') as f:
+            guide_content = f.read()
+        
+        # Display the markdown content
+        st.markdown(guide_content)
+        
+    except FileNotFoundError:
+        st.error("User guide file not found. Please ensure docs/USER_GUIDE.md exists.")
+    except Exception as e:
+        st.error(f"Error loading user guide: {e}")
+    
+    # Add quick navigation
+    st.markdown("---")
+    st.markdown("### Quick Navigation")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("**Getting Started**")
+        st.markdown("- [Overview](#overview)")
+        st.markdown("- [Core Parameters](#core-parameters)")
+        st.markdown("- [Getting Started](#getting-started)")
+    
+    with col2:
+        st.markdown("**Features**")
+        st.markdown("- [Add-On Packages](#add-on-packages)")
+        st.markdown("- [Scenario Management](#scenario-management)")
+        st.markdown("- [Rates & Pricing](#rates--pricing)")
+    
+    with col3:
+        st.markdown("**Advanced**")
+        st.markdown("- [Results & Export](#results--export)")
+        st.markdown("- [Troubleshooting](#troubleshooting)")
+        st.markdown("- [Best Practices](#best-practices)")
+
+
 def main() -> None:
     """Main application entry point."""
     initialize_session_state()
@@ -1479,9 +1522,9 @@ def main() -> None:
     render_summary_cards(estimator, results)
 
     # Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
         "Base N2S", "Integrations", "Reports", "Degree Works", "Charts",
-        "How this estimate is built", "Assumptions", "Rates & Mixes"
+        "How this estimate is built", "Assumptions", "Rates & Mixes", "User Guide"
     ])
 
     with tab1:
@@ -1507,6 +1550,9 @@ def main() -> None:
 
     with tab8:
         render_rates_tab(estimator)
+
+    with tab9:
+        render_user_guide_tab()
 
     # Excel export
     st.markdown("---")
