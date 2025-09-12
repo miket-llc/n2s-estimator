@@ -552,64 +552,70 @@ def render_base_n2s_tab(estimator: N2SEstimator, results: 'EstimationResults') -
             }
         )
 
-    col1, col2 = st.columns(2)
+    # Comprehensive Package Summary
+    st.markdown("#### Package Summary")
+    
+    # Calculate totals
+    base_hours = sum(rh.total_hours for rh in results.base_role_hours)
+    base_cost = sum(rh.total_cost for rh in results.base_role_hours)
+    
+    integrations_hours = sum(rh.total_hours for rh in results.integrations_role_hours) if results.integrations_role_hours else 0
+    integrations_cost = sum(rh.total_cost for rh in results.integrations_role_hours) if results.integrations_role_hours else 0
+    
+    reports_hours = sum(rh.total_hours for rh in results.reports_role_hours) if results.reports_role_hours else 0
+    reports_cost = sum(rh.total_cost for rh in results.reports_role_hours) if results.reports_role_hours else 0
+    
+    degreeworks_hours = sum(rh.total_hours for rh in results.degreeworks_role_hours) if results.degreeworks_role_hours else 0
+    degreeworks_cost = sum(rh.total_cost for rh in results.degreeworks_role_hours) if results.degreeworks_role_hours else 0
+    
+    total_hours = base_hours + integrations_hours + reports_hours + degreeworks_hours
+    total_cost = base_cost + integrations_cost + reports_cost + degreeworks_cost
+    
+    # Create summary data
+    summary_data = [
+        {'Package': 'Base N2S', 'Hours': base_hours, 'Cost': base_cost},
+        {'Package': 'Integrations', 'Hours': integrations_hours, 'Cost': integrations_cost},
+        {'Package': 'Reports', 'Hours': reports_hours, 'Cost': reports_cost},
+        {'Package': 'Degree Works', 'Hours': degreeworks_hours, 'Cost': degreeworks_cost},
+        {'Package': '**TOTAL**', 'Hours': total_hours, 'Cost': total_cost}
+    ]
+    
+    summary_df = pd.DataFrame(summary_data)
+    summary_df['Hours'] = summary_df['Hours'].round(1)
+    summary_df['Cost'] = summary_df['Cost'].round(0)
+    
+    st.dataframe(
+        summary_df,
+        width="stretch",
+        column_config={
+            'Hours': st.column_config.NumberColumn(format="%.1f"),
+            'Cost': st.column_config.NumberColumn(format="$%d")
+        }
+    )
+    
+    st.markdown("---")
+    
+    # Role Summary
+    st.markdown("#### Role Summary")
+    role_summary = estimator.get_role_summary(results)
+    if role_summary:
+        role_df = pd.DataFrame([{
+            'Role': rh.role,
+            'Hours': rh.total_hours,
+            'Cost': rh.total_cost
+        } for rh in role_summary])
 
-    with col1:
-        # Stage summary
-        st.markdown("#### Stage Summary")
-        st.caption("Base N2S stages only")
-        
-        stage_summary = estimator.get_stage_summary(results)  # base-only
-        if stage_summary:
-            stage_df = pd.DataFrame([{
-                'Stage': rh.stage,
-                'Hours': rh.total_hours,
-                'Cost': rh.total_cost
-            } for rh in stage_summary])
+        role_df['Hours'] = role_df['Hours'].round(1)
+        role_df['Cost'] = role_df['Cost'].round(0)
 
-            stage_df['Hours'] = stage_df['Hours'].round(1)
-            stage_df['Cost'] = stage_df['Cost'].round(0)
-
-            st.dataframe(
-                stage_df,
-                width="stretch",
-                column_config={
-                    'Cost': st.column_config.NumberColumn(format="$%d")
-                }
-            )
-        
-        # Add-ons toggle below Stage Summary
-        include_addons = st.checkbox(
-            "Include add-ons in Stage Summary", 
-            value=True, 
-            help="When enabled, Stage Summary includes Integrations, Reports, and Degree Works."
+        st.dataframe(
+            role_df,
+            width="stretch",
+            column_config={
+                'Hours': st.column_config.NumberColumn(format="%.1f"),
+                'Cost': st.column_config.NumberColumn(format="$%d")
+            }
         )
-        
-        if include_addons:
-            st.info("💡 Switch to 'All Packages' view in Stage Summary to see add-ons included")
-
-    with col2:
-        # Role summary
-        st.markdown("#### Role Summary")
-        st.caption("Base N2S roles only")
-        role_summary = estimator.get_role_summary(results)
-        if role_summary:
-            role_df = pd.DataFrame([{
-                'Role': rh.role,
-                'Hours': rh.total_hours,
-                'Cost': rh.total_cost
-            } for rh in role_summary])
-
-            role_df['Hours'] = role_df['Hours'].round(1)
-            role_df['Cost'] = role_df['Cost'].round(0)
-
-            st.dataframe(
-                role_df,
-                width="stretch",
-                column_config={
-                    'Cost': st.column_config.NumberColumn(format="$%d")
-                }
-            )
 
 
 def render_integrations_tab(estimator: N2SEstimator, results: 'EstimationResults') -> None:
