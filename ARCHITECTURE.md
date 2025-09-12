@@ -8,44 +8,52 @@ The N2S Delivery Estimator is built as a modular Streamlit application with clea
 
 ### Core Engine (`src/n2s_estimator/engine/`)
 
-**`datatypes.py`**
+`datatypes.py`
+
 - Pydantic data models for all configuration and calculation data
 - Input validation and type safety
 - Business rule enforcement (percentages sum to 1.0, etc.)
 
-**`loader.py`**
+`loader.py`
+
 - Excel workbook parsing and data extraction
 - Configuration validation and normalization
 - Error handling for missing or malformed data
 
-**`estimator.py`**
+`estimator.py`
+
 - Core Base N2S estimation logic
 - Stage hour allocation and presales/delivery split
 - Product role mapping and multiplier application
 
-**`pricing.py`**
+`pricing.py`
+
 - Role expansion from delivery hours
 - Delivery split application (onshore/offshore/partner)
 - Rate card lookup and cost calculation
 
-**`addons.py`**
+`addons.py`
+
 - Integrations and Reports package calculations
 - Tier-based hour allocation and role distribution
 - Independent pricing from base package
 
-**`orchestrator.py`**
+`orchestrator.py`
+
 - Main coordination of all estimation components
 - Results aggregation and summary calculations
 - Public API for UI and external consumers
 
-**`validators.py`**
+`validators.py`
+
 - Configuration validation rules
 - Methodology drift detection
 - Warning and error reporting
 
 ### User Interface (`src/n2s_estimator/ui/`)
 
-**`main.py`**
+`main.py`
+
 - Streamlit application entry point
 - Sidebar parameter controls with validation
 - Multi-tab results display
@@ -54,7 +62,8 @@ The N2S Delivery Estimator is built as a modular Streamlit application with clea
 
 ### Export (`src/n2s_estimator/export/`)
 
-**`excel.py`**
+`excel.py`
+
 - Styled Excel workbook generation
 - Multiple worksheet creation with formatting
 - Conditional formatting and data bars
@@ -62,7 +71,8 @@ The N2S Delivery Estimator is built as a modular Streamlit application with clea
 
 ### Data (`src/n2s_estimator/data/`)
 
-**`n2s_estimator.xlsx`**
+`n2s_estimator.xlsx`
+
 - Master configuration workbook
 - Stage weights, role mixes, rate cards
 - Add-on catalog and product mappings
@@ -116,48 +126,56 @@ graph TD
 
 ### Primary Configuration (`n2s_estimator.xlsx`)
 
-**Stage Weights Sheet**
+Stage Weights Sheet
+
 - Controls: Phase, Stage, Stage Weight %
 - Validation: Must sum to 1.0
 - Impact: Hour allocation across project lifecycle
 
-**Role Mix Sheet**
+Role Mix Sheet
+
 - Controls: Stage, Role, Role Mix %
 - Validation: Must sum to 1.0 per stage
 - Impact: Resource allocation within each stage
 
-**Rates (Locales) Sheet**
+Rates (Locales) Sheet
+
 - Controls: Role, Locale, Onshore/Offshore/Partner rates
 - Validation: Must have rates for all enabled roles
 - Impact: Cost calculation by geography and delivery model
 
-**Delivery Mix Sheet**
+Delivery Mix Sheet
+
 - Controls: Global and per-role onshore/offshore/partner splits
 - Validation: Must sum to 1.0 per row
 - Impact: Resource distribution and blended rates
 
-**Add-On Catalog Sheet**
+Add-On Catalog Sheet
+
 - Controls: Package, Tier, Unit Hours, Role, Role %
 - Validation: Role % must sum to 1.0 per tier
 - Impact: Independent add-on package pricing
 
-**Product Role Map Sheet**
+Product Role Map Sheet
+
 - Controls: Role, Banner Enabled, Colleague Enabled, Multiplier
 - Validation: Boolean flags, non-negative multipliers
 - Impact: Role availability by product selection
 
 ### Derived Calculations
 
-**Effective Hours**
-```
+Effective Hours
+
+```plaintext
 Adjusted Base = Baseline × Size Multiplier × Delivery Type Multiplier × Maturity Factor
 Stage Hours = Adjusted Base × Stage Weight %
 Delivery Hours = Stage Hours × (1 - Presales %)
 Role Hours = Delivery Hours × Role Mix % × Product Multiplier
 ```
 
-**Cost Calculations**
-```
+Cost Calculations
+
+```plaintext
 Split Hours = Role Hours × Delivery Split %
 Split Cost = Split Hours × Rate[Locale][Split]
 Total Cost = Sum(Split Costs)
@@ -167,24 +185,28 @@ Blended Rate = Total Cost / Total Hours
 ## Key Design Decisions
 
 ### Separation of Concerns
+
 - **Data Models**: Pure data structures with validation
 - **Business Logic**: Stateless calculation engines
 - **Presentation**: UI components with no business logic
 - **Configuration**: External Excel workbook for business rules
 
 ### Validation Strategy
+
 - **Input Validation**: Pydantic models with business rule enforcement
 - **Configuration Validation**: Loader-level checks with warnings
 - **Runtime Validation**: Methodology drift detection
 - **User Feedback**: Clear error messages and guidance
 
 ### Extensibility Points
+
 - **New Locales**: Add rates to Rates (Locales) sheet
 - **New Roles**: Add to Role Mix and rate sheets
 - **New Add-ons**: Extend Add-On Catalog sheet
 - **New Products**: Update Product Role Map sheet
 
 ### Performance Considerations
+
 - **Caching**: Configuration loaded once per session
 - **Lazy Loading**: UI components render on demand
 - **Efficient Calculations**: Vectorized operations where possible
@@ -193,16 +215,19 @@ Blended Rate = Total Cost / Total Hours
 ## Error Handling
 
 ### Configuration Errors
+
 - Missing sheets: Graceful degradation with defaults
 - Invalid percentages: Clear validation messages
 - Missing rates: Fallback to US rates with warnings
 
 ### Runtime Errors
+
 - Invalid inputs: Pydantic validation with user-friendly messages
 - Calculation errors: Detailed error context and recovery suggestions
 - Export errors: Fallback options and diagnostic information
 
 ### User Experience
+
 - **Progressive Disclosure**: Advanced options in expandable sections
 - **Immediate Feedback**: Real-time validation in UI
 - **Clear Messaging**: Specific error descriptions and resolution steps
@@ -211,17 +236,19 @@ Blended Rate = Total Cost / Total Hours
 ## Testing Strategy
 
 ### Unit Tests
+
 - **Data Models**: Validation rules and edge cases
 - **Calculation Engines**: Deterministic math verification
 - **Loaders**: Configuration parsing and validation
 
 ### Integration Tests
+
 - **End-to-End Scenarios**: Complete estimation workflows
 - **Excel Export**: Generated file validation
 - **UI Components**: User interaction flows
 
 ### Validation Tests
+
 - **Expected Results**: Baseline scenario verification
 - **Edge Cases**: Boundary conditions and error states
 - **Performance**: Response time and memory usage
-
