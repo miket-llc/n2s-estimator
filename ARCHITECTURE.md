@@ -126,37 +126,37 @@ graph TD
 
 ### Primary Configuration (`n2s_estimator.xlsx`)
 
-Stage Weights Sheet
+Stage Weights Sheet (Configuration)
 
 - Controls: Phase, Stage, Stage Weight %
 - Validation: Must sum to 1.0
 - Impact: Hour allocation across project lifecycle
 
-Role Mix Sheet
+Role Mix Sheet (Configuration)
 
 - Controls: Stage, Role, Role Mix %
 - Validation: Must sum to 1.0 per stage
 - Impact: Resource allocation within each stage
 
-Rates (Locales) Sheet
+Rates (Locales) Sheet (Configuration)
 
 - Controls: Role, Locale, Onshore/Offshore/Partner rates
 - Validation: Must have rates for all enabled roles
 - Impact: Cost calculation by geography and delivery model
 
-Delivery Mix Sheet
+Delivery Mix Sheet (Configuration)
 
 - Controls: Global and per-role onshore/offshore/partner splits
 - Validation: Must sum to 1.0 per row
 - Impact: Resource distribution and blended rates
 
-Add-On Catalog Sheet
+Add-On Catalog Sheet (Configuration)
 
 - Controls: Package, Tier, Unit Hours, Role, Role %
 - Validation: Role % must sum to 1.0 per tier
 - Impact: Independent add-on package pricing
 
-Product Role Map Sheet
+Product Role Map Sheet (Configuration)
 
 - Controls: Role, Banner Enabled, Colleague Enabled, Multiplier
 - Validation: Boolean flags, non-negative multipliers
@@ -164,7 +164,7 @@ Product Role Map Sheet
 
 ### Derived Calculations
 
-Effective Hours
+Effective Hours (Calculations)
 
 ```plaintext
 Adjusted Base = Baseline × Size Multiplier × Delivery Type Multiplier × Maturity Factor
@@ -173,7 +173,7 @@ Delivery Hours = Stage Hours × (1 - Presales %)
 Role Hours = Delivery Hours × Role Mix % × Product Multiplier
 ```
 
-Cost Calculations
+Cost Calculations (Derived)
 
 ```plaintext
 Split Hours = Role Hours × Delivery Split %
