@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "n2s-estimator"
-version = "0.12.0"
+version = "0.12.1"
 description = "N2S Delivery Estimator - Streamlit application for project estimation"
 authors = [{name = "N2S Team"}]
 readme = "README.md"
